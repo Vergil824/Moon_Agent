@@ -4,6 +4,8 @@ import { MeasureGuide } from "./MeasureGuide";
 import { AuxiliaryInput } from "./AuxiliaryInput";
 import { ShapeSelection } from "./ShapeSelection";
 import { PainPointGrid } from "./PainPointGrid";
+import { LoadingAnalysis } from "./LoadingAnalysis";
+import { ProductRecommendation } from "./ProductRecommendation";
 import { ChatStatePayload } from "@/lib/store";
 
 /**
@@ -11,6 +13,7 @@ import { ChatStatePayload } from "@/lib/store";
  */
 export type StateComponentProps = {
   onSelect: (value: string) => void;
+  payload?: ChatStatePayload;
 };
 
 /**
@@ -25,7 +28,10 @@ export const StateComponentMap: Record<
   size_input: MeasureGuide,
   body_info: AuxiliaryInput,
   shape_choice: ShapeSelection,
-  pain_points: PainPointGrid
+  pain_points: PainPointGrid,
+  summary: LoadingAnalysis,
+  recommendation: ProductRecommendation,
+  recommendations: ProductRecommendation
 };
 
 /**

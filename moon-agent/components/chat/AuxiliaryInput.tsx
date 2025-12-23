@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useChatStore } from "@/lib/store";
+import type { StateComponentProps } from "./StateComponents";
 
 // Slider configuration based on AC requirements
 const SLIDER_CONFIG = {
@@ -37,15 +38,11 @@ export type AuxiliaryData = {
   waist: number;
 };
 
-export type AuxiliaryInputProps = {
-  onSelect: (value: string) => void;
-};
-
 /**
  * AuxiliaryInput component for collecting height, weight, and waist measurements
  * Matches Figma design: https://www.figma.com/design/tGvBvraowaAzvL1OSlaAAo/Cheng?node-id=10-1280
  */
-export function AuxiliaryInput({ onSelect }: AuxiliaryInputProps) {
+export function AuxiliaryInput({ onSelect }: StateComponentProps) {
   // Local state for slider values while dragging
   // Explicitly type as number to avoid literal type inference
   const [height, setHeight] = useState<number>(SLIDER_CONFIG.height.default);

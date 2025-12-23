@@ -155,3 +155,45 @@ body {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
 }
 
+/* LoadingAnalysis - Indeterminate progress bar (smooth / seamless) */
+@keyframes moon-indeterminate-bar {
+  from {
+    background-position-x: 0%;
+  }
+  to {
+    background-position-x: -200%;
+  }
+}
+
+.moon-indeterminate-bar {
+  /* Pink single flowing highlight */
+  background-image: linear-gradient(
+    90deg,
+    rgba(236, 72, 153, 0.12) 0%,
+    rgba(236, 72, 153, 0.25) 20%,
+    rgba(236, 72, 153, 0.65) 50%,
+    rgba(236, 72, 153, 0.25) 80%,
+    rgba(236, 72, 153, 0.12) 100%
+  );
+  background-size: 200% 100%;
+  animation: moon-indeterminate-bar 1.05s linear infinite;
+  will-change: background-position;
+}
+
+/* LoadingAnalysis - Conic sweep ring, masked to ring thickness */
+.ring-sweep {
+  background: conic-gradient(
+    from 20deg,
+    #fbcfe8 0deg,
+    #f472b6 110deg,
+    #ec4899 180deg,
+    transparent 240deg,
+    transparent 360deg
+  );
+  /* Make the rotating ring thinner */
+  -webkit-mask: radial-gradient(farthest-side, transparent 74%, #000 75.5%);
+  mask: radial-gradient(farthest-side, transparent 74%, #000 75.5%);
+  opacity: 0.9;
+  will-change: transform;
+}
+

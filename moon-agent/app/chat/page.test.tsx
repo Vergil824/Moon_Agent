@@ -90,7 +90,7 @@ describe("ChatPage", () => {
 
     render(<ChatPage />);
 
-    expect(screen.getByText("撑撑姐")).toBeInTheDocument();
+    expect(screen.getByText("满月 Moon")).toBeInTheDocument();
   });
 
   it("renders the chat input at the bottom", () => {
@@ -137,6 +137,34 @@ describe("ChatPage", () => {
 
     expect(screen.getByText("准备好了！")).toBeInTheDocument();
     expect(screen.getByText("有点紧张")).toBeInTheDocument();
+  });
+
+  it("renders LoadingAnalysis when currentState.step is 'summary'", () => {
+    vi.mocked(useChatStore).mockReturnValue({
+      messages: [
+        {
+          id: "1",
+          role: "assistant",
+          content: "（正在分析）",
+          timestamp: Date.now()
+        }
+      ],
+      isTyping: false,
+      isStreaming: false,
+      currentState: { step: "summary" },
+      addMessage: mockAddMessage,
+      appendToMessage: mockAppendToMessage,
+      updateMessageContent: mockUpdateMessageContent,
+      setIsTyping: mockSetIsTyping,
+      setIsStreaming: vi.fn(),
+      setCurrentState: mockSetCurrentState
+    });
+
+    render(<ChatPage />);
+
+    expect(screen.getByTestId("loading-analysis")).toBeInTheDocument();
+    // The UI includes an ellipsis ("生成中...") but we only care about the core label.
+    expect(screen.getByText(/生成中/)).toBeInTheDocument();
   });
 
   it("disables chat input when currentState.step is 'size_input'", () => {

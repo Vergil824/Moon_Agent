@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { ArrowLeft, Mic, Send, ImagePlus } from "lucide-react";
 import { useChatStore } from "@/lib/store";
 import { getStateComponent } from "@/components/chat/StateComponents";
+import { parseStateTaggedText } from "@/lib/chatProtocol";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import {
   createN8nDualChannelJsonlParser,
@@ -194,9 +195,19 @@ export default function ChatPage() {
       let assistantId: string | null = null;
       let anyText = false;
       let pendingState: unknown | null = null;
+      let deferredSummaryState: unknown | null = null;
       let streamEnded = false;
 
+      const maybeApplyDeferredSummaryState = () => {
+        if (!deferredSummaryState) return;
+        if (typingQueueRef.current.length > 0) return;
+        if (flushInProgressRef.current) return;
+        setCurrentState(deferredSummaryState as any);
+        deferredSummaryState = null;
+      };
+
       const maybeFinalize = () => {
+        maybeApplyDeferredSummaryState();
         if (!streamEnded) return;
         if (typingQueueRef.current.length > 0) return;
         if (flushInProgressRef.current) return;
@@ -253,12 +264,24 @@ export default function ChatPage() {
                   ? ((e.state as any).step as string)
                   : "";
 
+              const nextState = e.state ?? null;
+
               if (step === "welcome") {
-                pendingState = e.state ?? null;
+                pendingState = nextState;
                 // Keep the marker, but do not block rendering.
                 markShownWelcome(sessionId);
               } else {
-                pendingState = e.state ?? null;
+                pendingState = nextState;
+              }
+
+              if (step === "summary") {
+                // Defer summary until typewriter drains.
+                deferredSummaryState = pendingState;
+                maybeApplyDeferredSummaryState();
+              } else if (step === "recommendation" || step === "recommendations") {
+                // New segment: replace summary immediately with recommendation UI.
+                deferredSummaryState = null;
+                setCurrentState(pendingState as any);
               }
             }
 
@@ -308,7 +331,7 @@ export default function ChatPage() {
     if (hasInitialized.current) return;
     if (messages.length === 0) {
       hasInitialized.current = true;
-      // Bootstrap: let n8n generate the opening message
+      // Trigger bootstrap input to get real welcome message from backend
       void streamAssistantReply(BOOTSTRAP_INPUT);
     }
   }, [messages.length, streamAssistantReply]);
@@ -336,7 +359,12 @@ export default function ChatPage() {
 
   // Get state component to render
   const StateComponent = getStateComponent(currentState);
-  const isMeasurementLocked = (currentState as any)?.step === "size_input";
+  const currentStep = (currentState as any)?.step;
+  const isMeasurementLocked = currentStep === "size_input";
+  const isSummaryPhase = currentStep === "summary";
+  const allowDuringStreaming = isSummaryPhase;
+  const shouldRenderState =
+    StateComponent && !isTyping && (!isStreaming || allowDuringStreaming);
 
   return (
     <div
@@ -349,13 +377,16 @@ export default function ChatPage() {
         mode="embedded"
         scrollKey={currentState?.step}
         afterMessages={
-          StateComponent && !isTyping && !isStreaming ? (
-            <StateComponent onSelect={handleOptionSelect} />
+          shouldRenderState ? (
+            <StateComponent
+              onSelect={handleOptionSelect}
+              payload={currentState ?? undefined}
+            />
           ) : null
         }
       />
 
-      <ChatInput onSend={handleSend} disabled={isMeasurementLocked} />
+      <ChatInput onSend={handleSend} disabled={isMeasurementLocked } />
     </div>
   );
 }

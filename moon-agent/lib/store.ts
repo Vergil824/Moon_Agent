@@ -41,6 +41,18 @@ export type ChestType = "round" | "spindle" | "hemisphere";
 // Pain point selection - Story 3.2
 export type PainPointId = "wire_poking" | "cup_slipping" | "quad_boob" | "gaping_cup" | "strap_issues";
 
+// Product recommendation - Story 4.2
+export type Product = {
+  product_name: string;
+  price: number;
+  matching: number;
+  image_url: string;
+  size: string;
+  description?: string;
+  style?: string;
+  features?: string[];
+};
+
 // Chat State
 type ChatState = {
   messages: Message[];
@@ -51,6 +63,7 @@ type ChatState = {
   auxiliaryData: AuxiliaryData | null;
   chestType: ChestType | null;
   painPoints: PainPointId[];
+  recommendedProducts: Product[];
   addMessage: (msg: Omit<Message, "id" | "timestamp">) => string;
   updateMessageContent: (id: string, content: string) => void;
   appendToMessage: (id: string, chunk: string) => void;
@@ -61,6 +74,7 @@ type ChatState = {
   setAuxiliaryData: (data: AuxiliaryData | null) => void;
   setChestType: (type: ChestType | null) => void;
   setPainPoints: (points: PainPointId[]) => void;
+  setRecommendedProducts: (products: Product[]) => void;
   clearMessages: () => void;
 };
 
@@ -78,6 +92,7 @@ export const useChatStore = create<ChatState>((set) => ({
   auxiliaryData: null,
   chestType: null,
   painPoints: [],
+  recommendedProducts: [],
 
   addMessage: (msg) => {
     const id = generateId();
@@ -113,7 +128,19 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setIsStreaming: (isStreaming) => set({ isStreaming }),
 
-  setCurrentState: (currentState) => set({ currentState }),
+  setCurrentState: (currentState) => {
+    set({ currentState });
+    // If payload contains products, update recommendedProducts
+    if (currentState?.products && Array.isArray(currentState.products)) {
+      const normalizedProducts = (currentState.products as Array<Product & { size?: unknown }>).map(
+        (product) => ({
+          ...product,
+          size: typeof product.size === "string" ? product.size : String(product.size ?? "")
+        })
+      );
+      set({ recommendedProducts: normalizedProducts });
+    }
+  },
 
   setMeasurementData: (measurementData) => set({ measurementData }),
 
@@ -122,6 +149,8 @@ export const useChatStore = create<ChatState>((set) => ({
   setChestType: (chestType) => set({ chestType }),
 
   setPainPoints: (painPoints) => set({ painPoints }),
+
+  setRecommendedProducts: (recommendedProducts) => set({ recommendedProducts }),
 
   clearMessages: () => set({ messages: [] })
 }));

@@ -68,6 +68,36 @@ describe("n8nDualChannel", () => {
     expect(out[0].state).toEqual({ step: "welcome" });
     expect(out[0].textDelta).toBe("hi");
   });
+
+  it("supports multiple begin/item/end segments in a single JSONL stream (resets <STATE> parser per segment)", () => {
+    const p = createN8nDualChannelJsonlParser();
+
+    const chunk =
+      JSON.stringify({ type: "begin" }) +
+      "\n" +
+      JSON.stringify({
+        type: "item",
+        content: '<STATE>{"step":"welcome"}</STATE>hi'
+      }) +
+      "\n" +
+      JSON.stringify({ type: "end" }) +
+      "\n" +
+      JSON.stringify({ type: "begin" }) +
+      "\n" +
+      JSON.stringify({
+        type: "item",
+        content: '<STATE>{"step":"summary"}</STATE>ok'
+      }) +
+      "\n" +
+      JSON.stringify({ type: "end" }) +
+      "\n";
+
+    const out = p.push(chunk);
+    expect(out).toEqual([
+      { state: { step: "welcome" }, textDelta: "hi" },
+      { state: { step: "summary" }, textDelta: "ok" }
+    ]);
+  });
 });
 
 
