@@ -25,7 +25,8 @@ describe("useChatStore", () => {
       measurementData: null,
       auxiliaryData: null,
       chestType: null,
-      painPoints: []
+      painPoints: [],
+      recommendedProducts: []
     });
   });
 
@@ -140,6 +141,71 @@ describe("useChatStore", () => {
       useChatStore.getState().setCurrentState({ step: "measure" });
     });
     expect(useChatStore.getState().currentState).toEqual({ step: "measure" });
+  });
+
+  it("stores recommended products with size when state payload includes products", () => {
+    const payload = {
+      step: "recommendations",
+      products: [
+        {
+          product_name: "连翘杯",
+          price: 35,
+          matching: 5,
+          image_url: "https://example.com/img.png",
+          description: "圆盘型底盘大，宽底围分散重量，全包围防止外扩",
+          style: "欧美",
+          features: ["宽底围设计", "全包围侧翼"],
+          size: "75C"
+        }
+      ]
+    };
+
+    act(() => {
+      useChatStore.getState().setCurrentState(payload);
+    });
+
+    expect(useChatStore.getState().recommendedProducts).toEqual([
+      {
+        product_name: "连翘杯",
+        price: 35,
+        matching: 5,
+        image_url: "https://example.com/img.png",
+        description: "圆盘型底盘大，宽底围分散重量，全包围防止外扩",
+        style: "欧美",
+        features: ["宽底围设计", "全包围侧翼"],
+        size: "75C"
+      }
+    ]);
+  });
+
+  it("sets recommended products directly with setRecommendedProducts", () => {
+    expect(useChatStore.getState().recommendedProducts).toEqual([]);
+
+    act(() => {
+      useChatStore.getState().setRecommendedProducts([
+        {
+          product_name: "软钢圈舒适内衣",
+          price: 239,
+          matching: 4,
+          image_url: "https://example.com/softwire.png",
+          description: "软钢圈消除硬物压迫，底围弹性更好贴合",
+          features: ["软性记忆钢圈"],
+          size: "75C"
+        }
+      ]);
+    });
+
+    expect(useChatStore.getState().recommendedProducts).toEqual([
+      {
+        product_name: "软钢圈舒适内衣",
+        price: 239,
+        matching: 4,
+        image_url: "https://example.com/softwire.png",
+        description: "软钢圈消除硬物压迫，底围弹性更好贴合",
+        features: ["软性记忆钢圈"],
+        size: "75C"
+      }
+    ]);
   });
 
   it("clears all messages with clearMessages", () => {

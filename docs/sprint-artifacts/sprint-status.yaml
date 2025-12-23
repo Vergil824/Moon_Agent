@@ -24,11 +24,12 @@ development_status:
   3-2-pain-point-multiselect-grid: review
   3-3-n8n-diagnosis-engine: backlog
   3-4-3d-body-blueprint-report-rendering: backlog
+  3-5-loading-analysis-progress-feedback: review
   epic-3-retrospective: optional
 
-  epic-4: backlog
+  epic-4: in-progress
   4-1-n8n-recommendation-logic-sql-generation: backlog
-  4-2-recommendation-card-dynamic-reason: backlog
+  4-2-recommendation-card-dynamic-reason: review
   4-3-product-detail-interaction-simulation: backlog
   4-4-supply-chain-service-guarantee: backlog
   epic-4-retrospective: optional

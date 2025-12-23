@@ -1,54 +1,80 @@
-满月 Moon - Epic 结构规划方案
-基于 PRD v1.1, Architecture v1.4, UX v2.0
+---
+stepsCompleted:
+  - step-01-validate-prerequisites
+inputDocuments:
+  - docs/sprint-artifacts/prd.md
+  - docs/sprint-artifacts/architecture.md
+  - docs/sprint-artifacts/UX.md
+---
 
-1. Epic 1: 基础设施与核心数据层搭建 (Foundation & Core Data Layer)
-用户价值: 为应用提供稳定运行的基础环境，确保数据可存取，AI 流程可连通。 PRD 覆盖: 非功能需求（响应速度、隐私保护）、数据存储基础。 技术上下文:
+# 撑撑姐 - Epic Breakdown
 
-初始化 Next.js 14+ 项目 (Tailwind/Shadcn)。
+## Overview
 
-配置 Supabase 数据库 (Products, Users, Chat Sessions 表结构设计)。
+This document provides the complete epic and story breakdown for 撑撑姐, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
 
-搭建 n8n 基础 Webhook 回路与鉴权。
+## Requirements Inventory
 
-实现 Next.js API Route (BFF) 转发层。 UX 上下文: 确定全局主题色 (Violet Gradient) 与字体系统。
+### Functional Requirements
 
+FR1: 欢迎与破冰对话：建立“满月 Moon”人设，引导用户开始测量流程。
+FR2: 身体数据采集（尺码）：通过交互式引导获取上下胸围数据，支持分支逻辑（已知/不知道）。
+FR3: 测量视觉引导：展示 3D 灰模动画（直立测下围、90 度弯腰测上围）。
+FR4: 辅助信息采集：收集身高、体重、腰围，用于 BMI 计算及算法纠偏。
+FR5: 胸型诊断交互：通过抽象 3D 图标引导用户选择最接近的胸型（圆盘、纺锤、半球）。
+FR6: 痛点诊断交互：展示带插画的卡片式多选网格，识别核心痛点（压胸、空杯、跑杯等）。
+FR7: 对话意图识别与参数提取：利用 LLM 提取用户输入的数据（如上围 88 下围 73）。
+FR8: 智能推荐算法：基于上下胸围差计算初始尺码，结合身高/体重/胸型/痛点进行 SQL 过滤。
+FR9: 选品逻辑：仅推荐支持一件代发、7 天无理由退换且高 DSR 评分的商品。
+FR10: 3D 身体蓝图报告：生成哑光灰色 3D 人台模型，标注关键分析点（如底盘宽、真实尺码）。
+FR11: 游戏化与增长机制：生成深度报告作为社交货币，包含限时礼包和进度提示。
+FR12: 边界对话处理（Guardrails）：识别非内衣相关话题并优雅回绝。
 
-2. Epic 2: 沉浸式对话与测量引导 (Immersive Chat & Measurement Flow)
-用户价值: 用户可以与“满月”建立连接，并在专业的视觉引导下准确输入身体数据。 PRD 覆盖: 节点一（欢迎与破冰）、节点二（尺码采集）、节点三（辅助信息）。 技术上下文:
+### NonFunctional Requirements
 
-开发 ChatInterface 组件 (流式打字机效果)。
+NFR1: 隐私保护：身体数据需加密存储，仅用于推荐计算。
+NFR2: 响应性能：对话响应 1-2 秒内完成，加载动效需流畅无白屏。
+NFR3: 移动端适配：重点优化微信 H5 环境下的 3D 资源加载与 UI 布局。
+NFR4: BFF 架构安全性：通过 Next.js API Route 转发，隐藏 n8n Webhook 和 LLM Key。
 
-实现 MeasureGuide 组件 (集成 3D 循环动画资产)。
+### Additional Requirements
 
-对接 n8n 进行意图识别与参数提取 (LLM Chain)。 UX 上下文: 实现“对话气泡引导 + 底部操作卡片”布局，测量步骤的 3D 动效展示。
+- **项目启动模板**: 使用 Next.js 14+ (App Router) 结合 Tailwind CSS 和 Shadcn/UI。
+- **状态管理**: Zustand (客户端) 与 React Query (服务器端数据同步)。
+- **后端架构**: n8n 负责逻辑编排，Supabase PostgreSQL 存储商品、用户画像和对话会话。
+- **UI/UX 规范**: 紫罗兰渐变色系 (#A855F7 到 #7C3AED)，卡片式层级设计。
+- **动画实现**: Framer Motion 负责丝滑动效，GIF/WebP 序列帧作为 3D 降级方案。
+- **数据库设计**: 商品表必须支持 JSONB (size_available) 和 Array (suitable_shapes) 字段。
 
-3. Epic 3: 智能诊断与可视化反馈 (Diagnosis Engine & Visualization)
-用户价值: 用户能够直观地了解自己的胸型和痛点，并获得可视化的身体分析结果（Aha Moment）。 PRD 覆盖: 节点四（胸型诊断）、节点五（痛点诊断）、节点六（报告生成 - 3D 模型部分）。 技术上下文:
+### FR Coverage Map
 
-开发 SelectCards 组件 (胸型选择) 和 Grid 组件 (痛点多选)。
+{{requirements_coverage_map}}
 
-实现 3D 身体蓝图 (3D Model Screen) 的前端渲染与数据标注。---这里可以先暂时用一个placeholder代替
+## Epic List
 
-n8n 处理复杂的诊断逻辑并返回结构化分析数据。 UX 上下文: 抽象 3D 图标应用，痛点选择交互，加载页面的安抚性文案。
+{{epics_list}}
 
-4. Epic 4: 推荐算法与选品闭环 (Recommendation Algorithm & Product Display)
-用户价值: 用户获得真正匹配其数据的商品推荐，并能查看详情。 PRD 覆盖: 节点六（报告生成 - 数据部分）、推荐匹配算法逻辑、供应链逻辑。 技术上下文:
+<!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
 
-n8n 实现 SQL 生成逻辑 (SELECT * FROM products WHERE...)。
+## Epic {{N}}: {{epic_title_N}}
 
-Supabase products 表数据填充与查询优化。
+{{epic_goal_N}}
 
-开发 ProductCard 组件与推荐列表流。
+<!-- Repeat for each story (M = 1, 2, 3...) within epic N -->
 
-模拟加购/跳转逻辑。 UX 上下文: 推荐理由的动态展示 (“因为你是圆盘型...”)，新旧尺码对比展示。
+### Story {{N}}.{{M}}: {{story_title_N_M}}
 
-5. Epic 5: 交付打磨与增长机制 (Refinement, Gamification & Launch)
-用户价值: 获得完整的内衣深度报告作为社交货币，确信平台的可靠性。 PRD 覆盖: 游戏化与增长机制（限时礼包）、非功能需求（SEO、移动端适配）、边界处理。 技术上下文:
+As a {{user_type}},
+I want {{capability}},
+So that {{value_benefit}}.
 
-生成并美化最终诊断报告卡片。
+**Acceptance Criteria:**
 
-SEO Metadata 配置 (Open Graph)。
+<!-- for each AC on this story -->
 
-移动端兼容性测试与 Vercel 部署调优。
+**Given** {{precondition}}
+**When** {{action}}
+**Then** {{expected_outcome}}
+**And** {{additional_criteria}}
 
-边界情况 (Guardrails) 测试与优化。
+<!-- End story repeat -->

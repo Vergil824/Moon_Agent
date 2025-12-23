@@ -1,12 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { StateComponentProps } from "./StateComponents";
 
 export type WelcomeOption = "准备好了！" | "有点紧张";
-
-type WelcomeOptionsProps = {
-  onSelect: (option: WelcomeOption | string) => void;
-};
 
 const options: WelcomeOption[] = ["准备好了！", "有点紧张"];
 
@@ -14,7 +11,7 @@ const options: WelcomeOption[] = ["准备好了！", "有点紧张"];
  * WelcomeOptions component for initial user interaction
  * Renders pill-shaped buttons with outline style per Figma design
  */
-export function WelcomeOptions({ onSelect }: WelcomeOptionsProps) {
+export function WelcomeOptions({ onSelect }: StateComponentProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}

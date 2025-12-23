@@ -340,6 +340,33 @@
 - **前端渲染**: MVP 阶段不需使用 Three.js 实时渲染。使用一张高质量的 **通用灰色人台图片** 作为底图，通过绝对定位 (`absolute positioning`) 将数据标签 (`div`) 覆盖在图片对应坐标上。
 - **动态性**: 标签的内容（如“底盘宽”）来自 n8n 返回的数据。
 
+---
+
+### Story 3.5: 分析加载与进度反馈界面 (Loading Analysis & Progress Feedback)
+
+**用户故事**:
+作为一名 **用户**，
+我想要 **在完成所有数据输入后看到清晰的进度指示和鼓励性反馈**，
+以便 **我知道分析已经开始，并在等待结果时感到安心**。
+
+**验收标准 (Acceptance Criteria)**:
+
+- **Given** 用户已完成胸型选择和痛点输入。
+- **When** n8n 开始处理诊断逻辑，前端接收到 `<STATE>{"step":"summary"}</STATE>` 或类似指令。
+- **Then** 界面渲染 **LoadingAnalysis** 组件（参考 Figma 14:3041）。
+- **And** 组件包含一个 **进度条 (Progress Bar)**，初始显示为 **33%**（或根据实际后端进度动态更新）。
+- **And** 界面显示鼓励性文案：“Get！数据齐全。你的胸型非常典型，我知道你之前的内衣为什么钢圈总戳腋下了。”
+- **And** 进度条上方显示动态加载图标（紫色渐变球体效果）。
+- **And** 文字下方显示“分析中... [百分比]”的次要提示文字。
+- **And** 整体背景采用品牌渐变色，边框为 `#8B5CF6`。
+
+**技术实现 (Technical Notes)**:
+
+- **UI 组件**: 开发 `LoadingAnalysis` 组件，使用 `Framer Motion` 实现进度条填充动画。
+- **状态触发**: 当 `chatProtocol` 解析到 `step: "summary"` 时，渲染此组件。
+- **样式**: 使用 Tailwind CSS，主色调 `#8B5CF6` (Violet) 和强调色 `#EC4899` (Pink)。
+- **Figma 引用**: 节点 ID `14:3041`。
+
 # Epic 4: 推荐算法与选品闭环 (Recommendation Algorithm & Product Display)
 
 **Epic 目标**: 基于诊断数据，通过 n8n 编排精准的 SQL 查询，从 Supabase 检索合适的内衣商品，并以极具说服力的方式展示给用户。

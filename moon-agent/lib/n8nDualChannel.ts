@@ -45,17 +45,29 @@ export function createN8nDualChannelSseParser() {
 type N8nJsonlEvent = {
   type?: unknown;
   content?: unknown;
+  // Alternative text fields that may carry streamed text
+  data?: unknown;
+  text?: unknown;
 };
 
 /**
  * Dual-channel stream parser for n8n JSONL-like chunked responses:
  * - Each line is a JSON object
- * - We only care about {type:"item", content:"..."} where content is text
- * - Feed content into the `<STATE>` streaming parser
+ * - We support type: "begin" | "item" | "end"
+ * - A single HTTP response may contain multiple begin/item/end segments
+ * - To avoid losing state when multiple segments exist, we reset the `<STATE>` parser on "begin" (and also on "end")
+ * - Text can be carried in `content` (preferred), and optionally `data`/`text`
  */
 export function createN8nDualChannelJsonlParser() {
-  const state = createStateStreamParser();
+  let state = createStateStreamParser();
   let buffer = "";
+
+  function extractTextPayload(e: N8nJsonlEvent): string | null {
+    if (typeof e.content === "string") return e.content;
+    if (typeof e.data === "string") return e.data;
+    if (typeof e.text === "string") return e.text;
+    return null;
+  }
 
   function push(chunk: string): DualChannelEvent[] {
     buffer += chunk;
@@ -77,11 +89,24 @@ export function createN8nDualChannelJsonlParser() {
         continue;
       }
 
-      if (parsed?.type !== "item") continue;
-      if (typeof parsed.content !== "string") continue;
+      const t = typeof parsed?.type === "string" ? parsed.type : "";
+      if (t !== "begin" && t !== "item" && t !== "end") continue;
 
-      const ev = state.push(parsed.content);
-      if (ev.state !== undefined || ev.textDelta) out.push(ev);
+      // Segment boundary: reset the <STATE> parser so multiple segments can each carry their own <STATE>.
+      if (t === "begin") {
+        state = createStateStreamParser();
+      }
+
+      const textPayload = parsed ? extractTextPayload(parsed) : null;
+      if (typeof textPayload === "string") {
+        const ev = state.push(textPayload);
+        if (ev.state !== undefined || ev.textDelta) out.push(ev);
+      }
+
+      // Also reset on "end" in case the next segment starts without an explicit "begin".
+      if (t === "end") {
+        state = createStateStreamParser();
+      }
     }
 
     return out;
