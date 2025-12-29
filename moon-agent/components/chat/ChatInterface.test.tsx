@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ChatInterface } from "./ChatInterface";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/lib/core/store";
 
 function stripMotionProps<T extends Record<string, unknown>>(props: T) {
   const {
@@ -20,8 +20,9 @@ function stripMotionProps<T extends Record<string, unknown>>(props: T) {
 }
 
 // Mock the store
-vi.mock("@/lib/store", () => ({
-  useChatStore: vi.fn()
+vi.mock("@/lib/core/store", () => ({
+  useChatStore: vi.fn(),
+  useChatStoreHydrated: vi.fn().mockReturnValue(true) // Story 2.5: Always hydrated in tests
 }));
 
 // Mock framer-motion to avoid animation issues in tests
@@ -49,7 +50,10 @@ describe("ChatInterface", () => {
   it("renders the chat container with correct background gradient", () => {
     vi.mocked(useChatStore).mockReturnValue({
       messages: [],
-      isTyping: false
+      isTyping: false,
+      streamingMessageId: null, // Story 2.6
+      setIsTypewriterActive: vi.fn(), // Story 2.6
+      setHasAutoOpenedCurrentState: vi.fn() // Story 2.6
     });
 
     render(<ChatInterface />);
@@ -71,7 +75,10 @@ describe("ChatInterface", () => {
           timestamp: Date.now()
         }
       ],
-      isTyping: false
+      isTyping: false,
+      streamingMessageId: null, // Story 2.6
+      setIsTypewriterActive: vi.fn(), // Story 2.6
+      setHasAutoOpenedCurrentState: vi.fn() // Story 2.6
     });
 
     render(<ChatInterface />);
@@ -92,7 +99,10 @@ describe("ChatInterface", () => {
           timestamp: Date.now()
         }
       ],
-      isTyping: false
+      isTyping: false,
+      streamingMessageId: null, // Story 2.6
+      setIsTypewriterActive: vi.fn(), // Story 2.6
+      setHasAutoOpenedCurrentState: vi.fn() // Story 2.6
     });
 
     render(<ChatInterface />);
@@ -113,7 +123,10 @@ describe("ChatInterface", () => {
           timestamp: Date.now()
         }
       ],
-      isTyping: false
+      isTyping: false,
+      streamingMessageId: null, // Story 2.6
+      setIsTypewriterActive: vi.fn(), // Story 2.6
+      setHasAutoOpenedCurrentState: vi.fn() // Story 2.6
     });
 
     render(<ChatInterface />);
@@ -132,7 +145,10 @@ describe("ChatInterface", () => {
           timestamp: Date.now()
         }
       ],
-      isTyping: false
+      isTyping: false,
+      streamingMessageId: null, // Story 2.6
+      setIsTypewriterActive: vi.fn(), // Story 2.6
+      setHasAutoOpenedCurrentState: vi.fn() // Story 2.6
     });
 
     render(<ChatInterface />);
@@ -143,7 +159,10 @@ describe("ChatInterface", () => {
   it("shows typing indicator when isTyping is true", () => {
     vi.mocked(useChatStore).mockReturnValue({
       messages: [],
-      isTyping: true
+      isTyping: true,
+      streamingMessageId: null, // Story 2.6
+      setIsTypewriterActive: vi.fn(), // Story 2.6
+      setHasAutoOpenedCurrentState: vi.fn() // Story 2.6
     });
 
     render(<ChatInterface />);
@@ -158,7 +177,10 @@ describe("ChatInterface", () => {
         { id: "2", role: "user", content: "Second", timestamp: 2 },
         { id: "3", role: "assistant", content: "Third", timestamp: 3 }
       ],
-      isTyping: false
+      isTyping: false,
+      streamingMessageId: null, // Story 2.6
+      setIsTypewriterActive: vi.fn(), // Story 2.6
+      setHasAutoOpenedCurrentState: vi.fn() // Story 2.6
     });
 
     render(<ChatInterface />);

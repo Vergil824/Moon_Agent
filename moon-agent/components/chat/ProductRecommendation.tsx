@@ -1,12 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { Star, X, ChevronRight, ShoppingBag, ShoppingCart, ChevronLeft, CheckCircle2, Undo2 } from "lucide-react";
+import { X, ChevronRight, ShoppingBag, ShoppingCart, ChevronLeft, CheckCircle2, Undo2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import type { StateComponentProps } from "./StateComponents";
-import { useChatStore, Product } from "@/lib/store";
+import { useChatStore, Product } from "@/lib/core/store";
+import { addCartItem, deleteCartItems, updateCartCount, getCartList, type AppCartListRespVO } from "@/lib/cart/cartApi";
+import { CART_QUERY_KEY } from "@/lib/cart/useCart";
 import { toast } from "sonner";
 
 /**
@@ -18,9 +22,10 @@ type RecommendationCardProps = {
   onAddToCart: (product: Product) => void;
   onViewDetail: (product: Product) => void;
   isAdded: boolean;
+  isAdding: boolean;
 };
 
-function RecommendationCard({ product, onSelect, onAddToCart, onViewDetail, isAdded }: RecommendationCardProps) {
+function RecommendationCard({ product, onSelect, onAddToCart, onViewDetail, isAdded, isAdding }: RecommendationCardProps) {
   const { product_name, price, matching, image_url, description, style, features = [], size } = product;
 
   return (
@@ -85,11 +90,11 @@ function RecommendationCard({ product, onSelect, onAddToCart, onViewDetail, isAd
               e.stopPropagation();
               onAddToCart(product);
             }}
-            disabled={isAdded}
+            disabled={isAdded || isAdding}
             className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:bg-[#C4B5FD] text-white rounded-[14px] h-11 font-semibold shadow-md transition-all flex items-center justify-center gap-2"
           >
             <ShoppingCart className="w-4 h-4" />
-            {isAdded ? "已加购" : "加入购物车"}
+            {isAdded ? "已加购" : isAdding ? "处理中..." : "加入购物车"}
           </Button>
         </div>
       </div>
@@ -198,41 +203,235 @@ export function ProductRecommendation({ payload, onSelect }: StateComponentProps
   const [showResults, setShowResults] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [addedProducts, setAddedProducts] = useState<Record<string, boolean>>({});
-  const products = (payload?.products as Product[]) || [];
-  const recommendedProducts = useChatStore((state) => state.recommendedProducts);
+  const [undoSnapshots, setUndoSnapshots] = useState<Record<string, { cartId: number; prevCount: number }>>({});
+  const undoSnapshotsRef = useRef<Record<string, { cartId: number; prevCount: number }>>({});
+  const [pendingAdds, setPendingAdds] = useState<Record<string, boolean>>({});
+  const setSnapshot = (key: string, value: { cartId: number; prevCount: number }) => {
+    setUndoSnapshots((prev) => {
+      const next = { ...prev, [key]: value };
+      undoSnapshotsRef.current = next;
+      return next;
+    });
+  };
+
+  const clearSnapshot = (key: string) => {
+    setUndoSnapshots((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      undoSnapshotsRef.current = next;
+      return next;
+    });
+  };
+
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const accessToken = session?.accessToken;
   
+  const products = (payload?.products as Product[]) || [];
+  const { 
+    recommendedProducts, 
+    isTypewriterActive, 
+    isStreaming, 
+    hasAutoOpenedCurrentState,
+    setHasAutoOpenedCurrentState 
+  } = useChatStore((state) => ({
+    recommendedProducts: state.recommendedProducts,
+    isTypewriterActive: state.isTypewriterActive,
+    isStreaming: state.isStreaming,
+    hasAutoOpenedCurrentState: state.hasAutoOpenedCurrentState,
+    setHasAutoOpenedCurrentState: state.setHasAutoOpenedCurrentState
+  }));
+
   // Use products from payload if available, else from store
   const displayProducts = products.length > 0 ? products : recommendedProducts;
 
-  const handleAddToCart = (product: Product) => {
-    setAddedProducts((prev) => ({ ...prev, [product.product_name]: true }));
-    
-    toast.custom((t) => (
-      <div className="mx-auto w-full max-w-sm bg-white/95 backdrop-blur-sm rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-purple-100 p-4 flex items-center gap-3">
-        <div className="size-10 rounded-full bg-[#F3E8FF] flex items-center justify-center shrink-0">
-          <CheckCircle2 className="w-5 h-5 text-[#8B5CF6]" />
+  const getProductKey = (product: Product) => String(product.sku_id ?? product.product_name);
+  type UndoVariables = { cartId: number; product: Product; toastId?: string | number };
+
+  const undoMutation = useMutation({
+    mutationFn: async ({ cartId, product }: UndoVariables) => {
+      if (!accessToken) {
+        throw new Error("请先登录后再撤回");
+      }
+      const key = getProductKey(product);
+      const snapshot = undoSnapshots[key];
+      const targetCartId = snapshot?.cartId || cartId;
+      if (!targetCartId) {
+        throw new Error("缺少购物车 ID，无法撤回");
+      }
+      const prevCount = snapshot?.prevCount ?? 0;
+
+      if (prevCount > 0) {
+        const response = await updateCartCount(
+          { id: targetCartId, count: prevCount },
+          accessToken
+        );
+        if (response.code !== 0) {
+          throw new Error(response.msg || "撤回失败");
+        }
+        return { restoredCount: prevCount, cartId: targetCartId };
+      }
+
+      const response = await deleteCartItems([targetCartId], accessToken);
+      if (response.code !== 0) {
+        throw new Error(response.msg || "撤回失败");
+      }
+      return { restoredCount: 0, cartId: targetCartId };
+    },
+    onSuccess: (_, { product, toastId }) => {
+      const key = getProductKey(product);
+      setAddedProducts((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      clearSnapshot(key);
+      queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY });
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
+      toast.success("已撤回");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "撤回失败，请稍后重试";
+      toast.error(message);
+    }
+  });
+
+  const addToCartMutation = useMutation({
+    mutationFn: async (product: Product) => {
+      if (!product.sku_id) {
+        throw new Error("缺少 sku_id，无法加购");
+      }
+      if (!accessToken) {
+        throw new Error("请先登录后再加购");
+      }
+      const response = await addCartItem(
+        { skuId: product.sku_id, count: 1 },
+        accessToken
+      );
+      if (response.code !== 0) {
+        throw new Error(response.msg || "加入购物车失败");
+      }
+      return { cartId: response.data, product };
+    },
+    onMutate: (product) => {
+      const key = getProductKey(product);
+      setPendingAdds((prev) => ({ ...prev, [key]: true }));
+    },
+    onSuccess: async ({ cartId, product }) => {
+      const key = getProductKey(product);
+      let prevCount = undoSnapshots[key]?.prevCount ?? 0;
+
+      if (prevCount === 0 && accessToken) {
+        try {
+          const latest = await getCartList(accessToken);
+          if (latest.code === 0) {
+            const currentItem =
+              latest.data.validList.find((item) => item.id === cartId) ??
+              latest.data.validList.find((item) => item.skuId === product.sku_id);
+            if (currentItem) {
+              prevCount = Math.max((currentItem.count ?? 1) - 1, 0);
+            }
+            queryClient.setQueryData(CART_QUERY_KEY, latest.data);
+          }
+        } catch {
+          // ignore fetch errors for snapshot fallback
+        }
+      }
+
+      setAddedProducts((prev) => ({ ...prev, [key]: true }));
+      setSnapshot(key, {
+        cartId: undoSnapshotsRef.current[key]?.cartId || cartId || 0,
+        prevCount
+      });
+      queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY });
+
+      toast.custom((t) => (
+        <div className="mx-auto w-full max-w-sm bg-white/95 backdrop-blur-sm rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-purple-100 p-4 flex items-center gap-3">
+          <div className="size-10 rounded-full bg-[#F3E8FF] flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-[#8B5CF6]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-gray-900 text-sm">已加入购物车</h4>
+            <p className="text-xs text-gray-500 truncate">
+              {product.product_name} · {product.size}
+            </p>
+          </div>
+          <button
+            onClick={() => undoMutation.mutate({ cartId, product, toastId: t })}
+            disabled={undoMutation.isPending}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-gray-100 text-xs font-semibold text-gray-600 transition-colors disabled:opacity-60"
+          >
+            <Undo2 className="w-3 h-3" />
+            {undoMutation.isPending ? "撤回中..." : "撤回"}
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-gray-900 text-sm">已加入购物车</h4>
-          <p className="text-xs text-gray-500 truncate">{product.product_name} · {product.size}</p>
-        </div>
-        <button 
-          onClick={() => {
-            setAddedProducts((prev) => {
-              const next = { ...prev };
-              delete next[product.product_name];
-              return next;
-            });
-            toast.dismiss(t);
-          }}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-gray-100 text-xs font-semibold text-gray-600 transition-colors"
-        >
-          <Undo2 className="w-3 h-3" />
-          撤回
-        </button>
-      </div>
-    ), { duration: 4000 });
+      ), { duration: 4000 });
+    },
+    onError: (error, product) => {
+      const key = getProductKey(product);
+      setPendingAdds((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      clearSnapshot(key);
+      const message = error instanceof Error ? error.message : "加入购物车失败";
+      toast.error(message);
+    },
+    onSettled: (_, __, product) => {
+      if (product) {
+        const key = getProductKey(product);
+        setPendingAdds((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      }
+    }
+  });
+
+  const prepareUndoSnapshot = async (product: Product) => {
+    const key = getProductKey(product);
+    try {
+      const cached = queryClient.getQueryData(CART_QUERY_KEY) as AppCartListRespVO | undefined;
+      let existingItem = cached?.validList?.find((item) => item.skuId === product.sku_id);
+
+      if (!existingItem && accessToken) {
+        const response = await getCartList(accessToken);
+        if (response.code === 0) {
+          existingItem = response.data.validList.find((item) => item.skuId === product.sku_id);
+          queryClient.setQueryData(CART_QUERY_KEY, response.data);
+        }
+      }
+
+      const prevCount = existingItem?.count ?? 0;
+      const prevCartId = existingItem?.id ?? 0;
+    setSnapshot(key, { cartId: prevCartId, prevCount });
+    } catch {
+    setSnapshot(key, { cartId: 0, prevCount: 0 });
+    }
   };
+
+  const handleAddToCart = (product: Product) => {
+    const key = getProductKey(product);
+    if (pendingAdds[key]) return;
+    void prepareUndoSnapshot(product).finally(() => addToCartMutation.mutate(product));
+  };
+
+  // Story 2.6: Auto-open results when typewriter finishes (AC: 11)
+  useEffect(() => {
+    // Only auto-open if:
+    // 1. Typewriter finished (!isTypewriterActive)
+    // 2. Network finished (!isStreaming)
+    // 3. We haven't already auto-opened (!hasAutoOpenedCurrentState)
+    // 4. There are products to show (displayProducts.length > 0)
+    if (!isTypewriterActive && !isStreaming && !hasAutoOpenedCurrentState && displayProducts.length > 0) {
+      setHasAutoOpenedCurrentState(true);
+      setShowResults(true);
+    }
+  }, [isTypewriterActive, isStreaming, hasAutoOpenedCurrentState, displayProducts.length, setHasAutoOpenedCurrentState]);
 
   if (displayProducts.length === 0) {
     return (
@@ -247,6 +446,7 @@ export function ProductRecommendation({ payload, onSelect }: StateComponentProps
       {/* 1. The Guide Card shown in Chat Flow (Figma 14:3512) */}
       <RecommendationGuide
         onClick={() => {
+          setHasAutoOpenedCurrentState(true);
           setSelectedProduct(null);
           setShowResults(true);
         }}
@@ -296,17 +496,18 @@ export function ProductRecommendation({ payload, onSelect }: StateComponentProps
                       setShowResults(false);
                       setSelectedProduct(null);
                     }}
-                    isAdded={!!addedProducts[selectedProduct.product_name]}
+                    isAdded={!!addedProducts[getProductKey(selectedProduct)]}
                   />
                ) : (
                   displayProducts.map((product, idx) => (
                     <RecommendationCard 
-                      key={`${product.product_name}-${idx}`} 
+                      key={`${getProductKey(product)}-${idx}`} 
                       product={product} 
                       onSelect={(val) => setShowResults(false)} 
                       onAddToCart={handleAddToCart}
                       onViewDetail={(p) => setSelectedProduct(p)}
-                      isAdded={!!addedProducts[product.product_name]}
+                      isAdded={!!addedProducts[getProductKey(product)]}
+                      isAdding={!!pendingAdds[getProductKey(product)]}
                     />
                   ))
                )}

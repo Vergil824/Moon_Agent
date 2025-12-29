@@ -1,5 +1,42 @@
 import { act } from "@testing-library/react";
-import { useUiStore, useChatStore } from "./store";
+import { useUiStore, useChatStore, useNavigationStore } from "./store";
+
+// Use the global storage mocks from vitest.setup.ts
+const { localStorageMock, sessionStorageMock } = globalThis as unknown as { 
+  localStorageMock: Storage;
+  sessionStorageMock: Storage;
+};
+
+describe("useNavigationStore", () => {
+  beforeEach(() => {
+    // Reset storage and navigation state before each test
+    localStorageMock.clear();
+    sessionStorageMock.clear();
+    useNavigationStore.setState({ activeTab: "home" });
+  });
+
+  it("initializes with activeTab as 'home'", () => {
+    const state = useNavigationStore.getState();
+    expect(state.activeTab).toBe("home");
+  });
+
+  it("updates activeTab with setActiveTab", () => {
+    act(() => {
+      useNavigationStore.getState().setActiveTab("discover");
+    });
+    expect(useNavigationStore.getState().activeTab).toBe("discover");
+
+    act(() => {
+      useNavigationStore.getState().setActiveTab("profile");
+    });
+    expect(useNavigationStore.getState().activeTab).toBe("profile");
+
+    act(() => {
+      useNavigationStore.getState().setActiveTab("home");
+    });
+    expect(useNavigationStore.getState().activeTab).toBe("home");
+  });
+});
 
 describe("useUiStore", () => {
   it("toggles modalOpen", () => {
@@ -16,7 +53,9 @@ describe("useUiStore", () => {
 
 describe("useChatStore", () => {
   beforeEach(() => {
-    // Reset store state before each test
+    // Reset store state before each test (including Story 2.5 sessionId)
+    localStorageMock.clear();
+    sessionStorageMock.clear();
     useChatStore.setState({
       messages: [],
       isTyping: false,
@@ -26,7 +65,8 @@ describe("useChatStore", () => {
       auxiliaryData: null,
       chestType: null,
       painPoints: [],
-      recommendedProducts: []
+      recommendedProducts: [],
+      sessionId: null
     });
   });
 
@@ -333,6 +373,177 @@ describe("useChatStore", () => {
     });
 
     expect(useChatStore.getState().painPoints).toEqual([]);
+  });
+
+  // Story 2.5: sessionId field tests
+  it("initializes with sessionId as null", () => {
+    const state = useChatStore.getState();
+    expect(state.sessionId).toBeNull();
+  });
+
+  it("stores sessionId with setSessionId", () => {
+    act(() => {
+      useChatStore.getState().setSessionId("test-session-123");
+    });
+
+    expect(useChatStore.getState().sessionId).toBe("test-session-123");
+
+    act(() => {
+      useChatStore.getState().setSessionId(null);
+    });
+
+    expect(useChatStore.getState().sessionId).toBeNull();
+  });
+
+  it("generates and stores sessionId with getOrCreateSessionId", () => {
+    // Initially null
+    expect(useChatStore.getState().sessionId).toBeNull();
+
+    // Get or create should generate a new session ID
+    const sessionId = useChatStore.getState().getOrCreateSessionId();
+    expect(sessionId).toBeDefined();
+    expect(typeof sessionId).toBe("string");
+    expect(sessionId.length).toBeGreaterThan(0);
+
+    // Subsequent call should return the same session ID
+    const sessionId2 = useChatStore.getState().getOrCreateSessionId();
+    expect(sessionId2).toBe(sessionId);
+  });
+});
+
+describe("useChatStore Persistence (Story 2.5)", () => {
+  beforeEach(async () => {
+    // Clear storage first
+    localStorageMock.clear();
+    sessionStorageMock.clear();
+
+    // Reset store state
+    useChatStore.setState({
+      messages: [],
+      isTyping: false,
+      isStreaming: false,
+      currentState: null,
+      measurementData: null,
+      auxiliaryData: null,
+      chestType: null,
+      painPoints: [],
+      recommendedProducts: [],
+      sessionId: null
+    });
+
+    // Clear any pending persist operations
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  });
+
+  it("persists messages, currentState, measurementData, auxiliaryData, chestType, painPoints, sessionId to localStorage", async () => {
+    // Set up state
+    act(() => {
+      useChatStore.getState().addMessage({ role: "assistant", content: "Hello" });
+      useChatStore.getState().setCurrentState({ step: "welcome" });
+      useChatStore.getState().setMeasurementData({ lowerBust: 75, upperBust: 90, bustDifference: 15 });
+      useChatStore.getState().setAuxiliaryData({ height: 165, weight: 55, waist: 68 });
+      useChatStore.getState().setChestType("round");
+      useChatStore.getState().setPainPoints(["wire_poking"]);
+      useChatStore.getState().setSessionId("session-abc");
+    });
+
+    // Wait for persist middleware to write
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Check localStorage was updated
+    const stored = localStorageMock.getItem("moon-chat-storage");
+    expect(stored).not.toBeNull();
+
+    const parsed = JSON.parse(stored!);
+    expect(parsed.state.messages).toHaveLength(1);
+    expect(parsed.state.currentState).toEqual({ step: "welcome" });
+    expect(parsed.state.measurementData).toEqual({ lowerBust: 75, upperBust: 90, bustDifference: 15 });
+    expect(parsed.state.auxiliaryData).toEqual({ height: 165, weight: 55, waist: 68 });
+    expect(parsed.state.chestType).toBe("round");
+    expect(parsed.state.painPoints).toEqual(["wire_poking"]);
+    expect(parsed.state.sessionId).toBe("session-abc");
+  });
+
+  it("does NOT persist isTyping and isStreaming (UI temporary states)", async () => {
+    // Set up state including UI temporary states
+    act(() => {
+      useChatStore.getState().addMessage({ role: "assistant", content: "Test" });
+      useChatStore.getState().setIsTyping(true);
+      useChatStore.getState().setIsStreaming(true);
+    });
+
+    // Wait for persist middleware to write
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Check localStorage
+    const stored = localStorageMock.getItem("moon-chat-storage");
+    expect(stored).not.toBeNull();
+
+    const parsed = JSON.parse(stored!);
+    // isTyping and isStreaming should NOT be in persisted state
+    expect(parsed.state.isTyping).toBeUndefined();
+    expect(parsed.state.isStreaming).toBeUndefined();
+  });
+
+  it("restores persisted state after rehydration", async () => {
+    // Pre-populate localStorage with persisted state
+    const persistedState = {
+      state: {
+        messages: [{ id: "msg-1", role: "assistant", content: "Persisted message", timestamp: 1234567890 }],
+        currentState: { step: "size_input" },
+        measurementData: { lowerBust: 80, upperBust: 95, bustDifference: 15 },
+        auxiliaryData: { height: 170, weight: 60, waist: 70 },
+        chestType: "spindle",
+        painPoints: ["cup_slipping", "gaping_cup"],
+        recommendedProducts: [],
+        sessionId: "persisted-session"
+      },
+      version: 0
+    };
+    localStorageMock.setItem("moon-chat-storage", JSON.stringify(persistedState));
+
+    // Trigger rehydration by calling persist.rehydrate()
+    await useChatStore.persist.rehydrate();
+
+    // Verify state was restored
+    const state = useChatStore.getState();
+    expect(state.messages).toHaveLength(1);
+    expect(state.messages[0].content).toBe("Persisted message");
+    expect(state.currentState).toEqual({ step: "size_input" });
+    expect(state.measurementData).toEqual({ lowerBust: 80, upperBust: 95, bustDifference: 15 });
+    expect(state.auxiliaryData).toEqual({ height: 170, weight: 60, waist: 70 });
+    expect(state.chestType).toBe("spindle");
+    expect(state.painPoints).toEqual(["cup_slipping", "gaping_cup"]);
+    expect(state.sessionId).toBe("persisted-session");
+
+    // UI states should be reset to initial values, not persisted
+    expect(state.isTyping).toBe(false);
+    expect(state.isStreaming).toBe(false);
+  });
+
+  it("uses storage key 'moon-chat-storage'", async () => {
+    act(() => {
+      useChatStore.getState().addMessage({ role: "user", content: "test" });
+    });
+
+    // Wait for persist middleware to write
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(localStorageMock.getItem("moon-chat-storage")).not.toBeNull();
+    expect(localStorageMock.getItem("chat-storage")).toBeNull();
+    expect(localStorageMock.getItem("moon-agent-chat")).toBeNull();
+  });
+
+  it("provides useChatStoreHydrated hook that returns true after hydration", async () => {
+    // The store should already be hydrated in the test environment
+    // since the module is loaded at the start
+    const { useChatStoreHydrated } = await import("./store");
+    
+    // Verify the hook exists and is a function
+    expect(typeof useChatStoreHydrated).toBe("function");
+    
+    // Verify persist.hasHydrated returns true (already hydrated)
+    expect(useChatStore.persist.hasHydrated()).toBe(true);
   });
 });
 

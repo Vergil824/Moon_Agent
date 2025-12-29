@@ -43,6 +43,12 @@
   --gradient-end: #a855f7;
 }
 
+/* 
+ * Dark mode is intentionally disabled for this app.
+ * The app uses a light theme only to ensure consistent branding.
+ * To re-enable, uncomment the media query below.
+ */
+/*
 @media (prefers-color-scheme: dark) {
   :root {
     --background: 224 71% 4%;
@@ -68,6 +74,7 @@
     --gradient-end: #a855f7;
   }
 }
+*/
 
 * {
   @apply border-border;
@@ -83,6 +90,24 @@ body {
     var(--gradient-start),
     var(--gradient-end)
   );
+}
+
+/* Story 1.4: Global page gradient class */
+.bg-page-gradient {
+  background: linear-gradient(
+    to bottom,
+    var(--moon-page-gradient-from),
+    var(--moon-page-gradient-to)
+  );
+}
+
+/* Story 1.4: Header and nav shadow utilities */
+.header-shadow {
+  box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+}
+
+.nav-shadow {
+  box-shadow: 0px -4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .glass {

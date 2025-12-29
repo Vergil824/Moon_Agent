@@ -26,6 +26,7 @@ const config: Config = {
         foreground: "hsl(var(--foreground))",
         "moon-purple": "#8B5CF6",
         "moon-purple-hover": "#7C3AED",
+        "brand-purple": "#8B5CF6",
         "moon-pink": "#EC4899",
         "moon-text": "#1F2937",
         "moon-text-muted": "#6B7280",

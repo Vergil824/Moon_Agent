@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AuxiliaryInput } from "./AuxiliaryInput";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/lib/core/store";
 import { act } from "@testing-library/react";
 
 // Mock framer-motion to avoid animation issues in tests

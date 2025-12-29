@@ -6,7 +6,7 @@ import { ShapeSelection } from "./ShapeSelection";
 import { PainPointGrid } from "./PainPointGrid";
 import { LoadingAnalysis } from "./LoadingAnalysis";
 import { ProductRecommendation } from "./ProductRecommendation";
-import { ChatStatePayload } from "@/lib/store";
+import { ChatStatePayload } from "@/lib/core/store";
 
 /**
  * Props type for state-driven components
