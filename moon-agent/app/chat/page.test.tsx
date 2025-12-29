@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ChatPage from "./page";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/lib/core/store";
 
 function stripMotionProps<T extends Record<string, unknown>>(props: T) {
   const {
@@ -20,8 +20,9 @@ function stripMotionProps<T extends Record<string, unknown>>(props: T) {
 }
 
 // Mock the store
-vi.mock("@/lib/store", () => ({
-  useChatStore: vi.fn()
+vi.mock("@/lib/core/store", () => ({
+  useChatStore: vi.fn(),
+  useChatStoreHydrated: vi.fn().mockReturnValue(true) // Story 2.5: Always hydrated in tests
 }));
 
 // Mock framer-motion
@@ -60,6 +61,8 @@ describe("ChatPage", () => {
   const mockUpdateMessageContent = vi.fn();
   const mockSetIsTyping = vi.fn();
   const mockSetCurrentState = vi.fn();
+  const mockGetOrCreateSessionId = vi.fn().mockReturnValue("test-session-id"); // Story 2.5
+  const mockStreamAssistantReply = vi.fn().mockResolvedValue(undefined); // Story 2.6
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,7 +77,9 @@ describe("ChatPage", () => {
     );
   });
 
-  it("renders the chat header with title", () => {
+  // NOTE: ChatHeader is now rendered globally in app/layout.tsx (Story 1.4)
+  // The header test is moved to components/layout/ChatHeader.test.tsx
+  it("renders the chat page container", () => {
     vi.mocked(useChatStore).mockReturnValue({
       messages: [],
       isTyping: false,
@@ -85,12 +90,14 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
 
-    expect(screen.getByText("满月 Moon")).toBeInTheDocument();
+    expect(screen.getByTestId("chat-page")).toBeInTheDocument();
   });
 
   it("renders the chat input at the bottom", () => {
@@ -104,7 +111,9 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
@@ -130,7 +139,9 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
@@ -157,7 +168,9 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
@@ -178,7 +191,9 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
@@ -197,7 +212,9 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
@@ -221,7 +238,9 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
@@ -231,7 +250,9 @@ describe("ChatPage", () => {
     expect(mockSetCurrentState).toHaveBeenCalledWith(null);
   });
 
-  it("has full height layout for mobile viewport", () => {
+  // NOTE: Full height layout is now controlled by app/layout.tsx (Story 1.4)
+  // ChatPage uses flex-1 to fill available space within the global layout
+  it("has flexible layout to fill available space", () => {
     vi.mocked(useChatStore).mockReturnValue({
       messages: [],
       isTyping: false,
@@ -242,15 +263,17 @@ describe("ChatPage", () => {
       updateMessageContent: mockUpdateMessageContent,
       setIsTyping: mockSetIsTyping,
       setIsStreaming: vi.fn(),
-      setCurrentState: mockSetCurrentState
+      setCurrentState: mockSetCurrentState,
+      getOrCreateSessionId: mockGetOrCreateSessionId, // Story 2.5
+      streamAssistantReply: mockStreamAssistantReply // Story 2.6
     });
 
     render(<ChatPage />);
 
     const container = screen.getByTestId("chat-page");
-    expect(container).toHaveClass("h-screen");
     expect(container).toHaveClass("flex");
     expect(container).toHaveClass("flex-col");
+    expect(container).toHaveClass("flex-1");
   });
 });
 

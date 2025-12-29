@@ -1,15 +1,16 @@
-generated: 2025-12-13
-project: 撑撑姐
-project_key: 撑撑姐
+generated: 2025-12-25
+project: Moon
+project_key: Moon
 tracking_system: file-system
-story_location: /Users/lilangjun/Desktop/撑撑姐/docs/sprint-artifacts/SM_Stories
+story_location: /Users/lilangjun/Desktop/Moon/docs/sprint-artifacts/SM_Stories
 
 development_status:
   epic-1: in-progress
   1-1-init-nextjs-project-tailwind-shadcn: done
   1-2-configure-supabase-database: backlog
   1-3-setup-n8n-webhook-auth: done
-  1-4-basic-layout-mobile-viewport: done
+  1-4-bas345ic-layout-mobile-navigation: review
+  1-5-login-registration-flow: review
   epic-1-retrospective: optional
 
   epic-2: in-progress
@@ -17,26 +18,30 @@ development_status:
   2-2-measurement-guide-3d-animation: review
   2-3-auxiliary-data-collection: done
   2-4-n8n-intent-recognition-param-extraction: backlog
+  2-5-zustand-chat-persistence: review
+  2-6-global-streaming-management: done
   epic-2-retrospective: optional
 
   epic-3: in-progress
   3-1-chest-type-selection-component: review
   3-2-pain-point-multiselect-grid: review
   3-3-n8n-diagnosis-engine: backlog
-  3-4-3d-body-blueprint-report-rendering: backlog
   3-5-loading-analysis-progress-feedback: review
   epic-3-retrospective: optional
 
   epic-4: in-progress
   4-1-n8n-recommendation-logic-sql-generation: backlog
   4-2-recommendation-card-dynamic-reason: review
-  4-3-product-detail-interaction-simulation: backlog
-  4-4-supply-chain-service-guarantee: backlog
+  4-3-shopping-cart-page-development: review
+  4-4-checkout-confirmation-and-order-creation: review
+  4-5-alipay-wechat-payment-integration: review
+  4-6-one-click-add-to-cart-undo-logic: review
   epic-4-retrospective: optional
 
   epic-5: backlog
-  5-1-lingerie-deep-report-generation: backlog
-  5-2-gamification-incentive-mechanism: backlog
-  5-3-boundary-handling-guardrails: backlog
-  5-4-seo-configuration-mobile-optimization: backlog
+  5-5-user-profile-order-list: review
+  5-6-returns-and-exchange-flow: backlog
+  5-7-order-lifecycle-management: backlog
+  5-8-order-item-comments: backlog
+  5-9-address-management-system: review
   epic-5-retrospective: optional

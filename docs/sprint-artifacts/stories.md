@@ -1,6 +1,6 @@
 # Epic 1: 基础设施与核心数据层搭建 (Foundation & Core Data Layer)
 
-**Epic 目标**: 搭建基于 Next.js + Supabase + n8n 的全栈基础环境，确立 UI 设计系统，并打通前端到 AI 智能体的通信链路。
+**Epic 目标**: 搭建基于 Next.js + Supabase + n8n 的全栈基础环境，确立 UI 设计系统，并集成微信登录与用户权限体系。
 
 ---
 
@@ -88,25 +88,85 @@
 
 ---
 
-### Story 1.4: 基础布局与移动端视口配置
+### Story 1.4: 全新移动端布局与底部导航集成
 
 **用户故事**:
 作为一名 **前端开发人员**，
-我想要 **创建适配移动端的 H5 基础布局容器**，
-以便 **应用在手机浏览器和微信中显示正常，无缩放问题**。
+我想要 **根据新的 Figma 设计稿实现包含底部导航栏的移动端布局**，
+以便 **用户可以在聊天、购物车和个人中心之间快速切换**。
 
 **验收标准 (Acceptance Criteria)**:
 
 - **Given** 项目已初始化。
 - **When** 在手机浏览器打开页面。
 - **Then** 视口 (Viewport) 设置正确，禁止用户缩放 (`user-scalable=no`)。
-- **And** 页面背景色为纯白或浅灰，无左右晃动。
-- **And** 创建一个全局 Layout 组件，包含在此阶段所需的任何全局状态提供者 (如 React Query Provider)。
+- **And** 页面背景色为 `bg-gradient-to-b from-[#FFF5F7] to-[#FAF5FF]`。
+- **And** 实现 **BottomNav** 组件，包含三个入口：
+  - **聊天 (Chat)**: 默认入口，点击进入智能对话。
+  - **购物车 (Cart)**: 点击进入购物车页面。
+  - **我的 (User)**: 点击进入个人中心页面。
+- **And** 导航栏选中状态使用背景颜色 `#FAF5FF` 和紫色图标强调（Figma 152:54）。
+- **And** 顶部导航栏 (ChatHeader) 更新为白色背景，阴影效果，文字为紫色 `#8B5CF6`(需要注意他们的角的弧度)。
 
 **技术实现 (Technical Notes)**:
 
-- 修改 `app/layout.tsx` 的 metadata viewport 设置。
-- 配置 `Zustand` store (空状态即可) 和 `React QueryClientProvider`。
+- 修改 `app/layout.tsx`，将 `BottomNav` 放入根布局。
+- 使用 `next/navigation` 的 `usePathname` 实现选中状态切换。
+- **Figma 引用**: 节点 ID `152:21` (Chat Page), `152:54` (BottomNav)。
+
+---
+
+### Story 1.5: 登录与注册全流程开发 (包含欢迎页、手机登录与注册)
+
+**用户故事**:
+作为一名 **未登录用户**，
+我想要 **通过欢迎页引导进入手机号登录或注册流程**，
+以便 **我能快速创建或进入我的账户，同步我的测量数据和购物车**。
+
+**验收标准 (Acceptance Criteria)**:
+
+- **欢迎页 (Welcome Page)** (Figma 162:85):
+
+  - **Given** 用户未登录且首次进入。
+  - **Then** 展示背景图 (`/assets/statics/Screenshot 2025-12-25 at 21.54.23.png`)。
+  - **And** 提供“微信一键登录”按钮（绿色 `#07c160`，暂不可点击）。
+  - **And** 提供“手机号码登录”按钮（半透明白色背景）。
+  - **And** 底部显示“用户协议”和“隐私政策”链接。
+
+- **手机登录页 (Login Page)** (Figma 163:178):
+
+  - **When** 用户在欢迎页点击“手机号码登录”。
+  - **Then** 进入带有毛玻璃背景的登录卡片。
+  - **And** 包含“手机号码”和“密码”输入框。
+  - **And** 点击紫色“登录”按钮 (`#8B5CF6`) 执行登录逻辑。
+  - **And** 底部有“立即注册”链接，点击跳转至注册页。
+
+- **注册页 (Register Page)** (Figma 163:228):
+
+  - **When** 用户点击“立即注册”。
+  - **Then** 进入注册卡片。
+  - **And** 包含“手机号码”和“验证码”输入框。
+  - **And** “获取验证码”按钮样式匹配设计稿。
+  - **And** 点击粉色“注册并登录”按钮 (`#EC4899`) 执行注册逻辑。
+  - **And** 底部有“去登录”链接，点击跳转回登录页。
+
+- **通用逻辑**:
+  - **And** 登录成功后，前端存储 JWT Token 并自动重定向。
+  - **And** 视口禁止缩放。
+
+**技术实现 (Technical Notes)**:
+
+- **认证中间件 (NextAuth)**:
+  - 采用 **NextAuth.js (Auth.js)** 作为中间层管理 Session，将 Token 加密存储在 **HttpOnly Session Cookie** 中。
+- **API 通信 (Native Fetch)**:
+  - 全面弃用 Axios，改用基于原生 `fetch` 封装的 `lib/api.ts`。
+  - **React Query 状态同步**: 推荐使用 `@tanstack/react-query` 的 `useMutation` 钩子处理登录、注册和验证码请求，以统一管理 loading 和错误反馈。
+- **登录接口**: `POST /app-api/member/auth/login` (手机号+密码) 或 `POST /app-api/member/auth/sms-login` (手机号+验证码)。
+- **发送验证码**: `POST /app-api/member/auth/send-sms-code` (参数: `mobile`, `scene: 1`) -- 暂时不需要。
+- **背景处理**: 使用 `backdrop-blur-[5px]` 实现设计稿中的毛玻璃效果。
+- **Figma 引用**: `162:85`, `163:178`, `163:228`。
+
+---
 
 # Epic 2: 沉浸式对话与测量引导 (Immersive Chat & Measurement Flow)
 
@@ -157,16 +217,14 @@
 
 - **Given** 用户同意测量。
 - **When** n8n 返回 `<STATE>{"step":"size_input"}</STATE>宝贝，撑撑姐教你先测量...`。
-- **Then** 界面流式显示文字引导。
-- **And** 检测到 `step: "size_input"` 时，**立即**在当前对话气泡下方渲染 **测量引导卡片 (MeasureGuide Card)**。
+- **Then** 检测到 `step: "size_input"` 时，立即渲染 **测量引导卡片 (MeasureGuide Card)**。
 - **And** 卡片包含 3D 演示动画和数字输入框。
-- **And** 在用户完成卡片操作（点击“确认”）之前，对话流暂停等待。
 - **And** 胸围差使用 **亮粉色 `#EC4899`** 进行强调。
 
 **技术实现 (Technical Notes)**:
 
-- **资产优化**: 使用 `<Image unoptimized />` 加载 GIF 或 WebP 格式的 3D 演示序列，预加载关键资源。
-- **交互逻辑**: 步骤条 (Step Wizard) 模式，用户输入完下围后自动或点击下一步切换到上围。
+- **资产优化**: 使用 `<Image unoptimized />` 加载 GIF 或 WebP 格式的 3D 演示序列。
+- **交互逻辑**: 步骤条模式，自动或点击切换上下围输入。
 
 ---
 
@@ -215,9 +273,62 @@
 - **n8n 节点**: Webhook -> AI Agent (Function Calling / Structured Output) -> Supabase Update -> Response。
 - **Prompt**: 在 n8n 的 System Prompt 中定义提取规则，强调对数字的敏感度。
 
-# Epic 3: 智能诊断与可视化反馈 (Diagnosis Engine & Visualization)
+---
 
-**Epic 目标**: 将用户输入的身体数据转化为可视化的诊断结果，通过胸型判断、痛点分析和 3D 蓝图展示，建立用户的信任感并为推荐打下基础。
+### Story 2.5: Zustand 状态持久化 (会话记录跨页面保持)
+
+**用户故事**:
+作为一名 **用户**，
+我想要 **在切换到购物车或个人中心后返回聊天界面时，看到之前的对话记录**，
+以便 **我不需要重新开始对话，保持流畅的购物体验**。
+
+**验收标准 (Acceptance Criteria)**:
+
+- **Given** 用户已经与“满月”进行了部分对话。
+- **When** 用户点击底部导航栏跳转到“购物车”或“我的”页面。
+- **And** 用户再次点击“聊天”返回。
+- **Then** 聊天气泡列表应完整保留，无需重新加载。
+- **And** 即使刷新浏览器页面，会话记录在当前 Session 内依然存在。
+- **And** 持久化内容应包括：消息列表 (`messages`)、当前诊断状态 (`currentState`) 及已输入的身体数据。
+
+**技术实现 (Technical Notes)**:
+
+- **中间件使用**: 使用 Zustand 的 `persist` 中间件。
+- **存储介质**: 默认使用 `sessionStorage` 以实现刷新不丢失（限当前会话）。
+- **Key 定义**: `moon-chat-storage`。
+- **白名单过滤**: 在 `partialize` 中配置仅持久化必要的业务数据（`messages`, `currentState`, `measurementData` 等），避免持久化 UI 状态（如 `isTyping`）。
+- **Hydration 处理**: 在 Next.js 环境下，需确保 Zustand Store 在读取 sessionStorage 完成（Hydrated）后再执行初始化逻辑，避免因初始状态为空而重复触发欢迎语。
+
+---
+
+### Story 2.6: 全局流式对话管理与背景追更 (Global Streaming Management & Background Updates)
+
+**用户故事**:
+作为一名 **用户**，
+我想要 **在切换到购物车或个人中心时，聊天对话依然能在后台继续接收**，
+以便 **我返回聊天界面时，能够看到完整的建议，而不会因为页面切换导致连接中断或报错**。
+
+**验收标准 (Acceptance Criteria)**:
+
+- **Given** 用户正在与“满月”进行流式对话。
+- **When** 用户点击底部导航栏跳转到其他页面（如购物车）。
+- **Then** 正在进行的 `fetch` 请求和流解析逻辑 **不应中断**。
+- **And** 消息内容应持续异步追加到 `useChatStore` 的 `messages` 数组中。
+- **And** `isStreaming` 状态在后台保持为 `true` 直至流结束。
+- **Given** 流在后台已经结束或仍在继续。
+- **When** 用户再次点击“聊天”返回。
+- **Then** 聊天气泡应正确显示后台已接收的所有内容。
+- **And** 如果流仍在进行，应自动触发“打字机”追赶逻辑，继续显示剩余内容。
+- **And** **不再显示** 因页面切换导致的“网络错误”或“请求失败”警告。
+
+**技术实现 (Technical Notes)**:
+
+- **逻辑上移**: 将 `streamAssistantReply` 函数从 `app/chat/page.tsx` 迁移到 `lib/store.ts` 的 `useChatStore` 动作中。
+- **全局单例**: 利用 Zustand Store 的单例特性，确保其生命周期贯穿整个 Session（除非刷新页面）。
+- **打字机解耦**: 将消息追加（Data Append）与打字机效果（UI Display）解耦。Store 负责数据追加，组件负责根据已读位置（Read Pointer）进行打字显示。
+- **追赶机制**: 在 `ChatPage` 挂载时，检查 `isStreaming` 状态，并对比当前消息的“已渲染长度”与“实际长度”，自动启动流式显示。
+
+# Epic 3: 智能诊断与可视化反馈 (Diagnosis Engine & Visualization)
 
 ---
 
@@ -314,7 +425,7 @@
 
 ---
 
-### Story 3.4: 3D 身体蓝图与报告渲染 (The Aha Moment)
+### Story 3.4: 3D 身体蓝图与报告渲染 (The Aha Moment)(已弃用)
 
 **用户故事**:
 作为一名 **用户**，
@@ -351,25 +462,18 @@
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** 用户已完成胸型选择和痛点输入。
-- **When** n8n 开始处理诊断逻辑，前端接收到 `<STATE>{"step":"summary"}</STATE>` 或类似指令。
-- **Then** 界面渲染 **LoadingAnalysis** 组件（参考 Figma 14:3041）。
-- **And** 组件包含一个 **进度条 (Progress Bar)**，初始显示为 **33%**（或根据实际后端进度动态更新）。
-- **And** 界面显示鼓励性文案：“Get！数据齐全。你的胸型非常典型，我知道你之前的内衣为什么钢圈总戳腋下了。”
-- **And** 进度条上方显示动态加载图标（紫色渐变球体效果）。
-- **And** 文字下方显示“分析中... [百分比]”的次要提示文字。
-- **And** 整体背景采用品牌渐变色，边框为 `#8B5CF6`。
+- **Given** 用户已完成所有输入。
+- **When** n8n 开始处理。
+- **Then** 渲染 **LoadingAnalysis** 组件。
+- **And** 包含进度条和鼓励性文案（“你的胸型非常典型...”）。
 
 **技术实现 (Technical Notes)**:
 
-- **UI 组件**: 开发 `LoadingAnalysis` 组件，使用 `Framer Motion` 实现进度条填充动画。
-- **状态触发**: 当 `chatProtocol` 解析到 `step: "summary"` 时，渲染此组件。
-- **样式**: 使用 Tailwind CSS，主色调 `#8B5CF6` (Violet) 和强调色 `#EC4899` (Pink)。
 - **Figma 引用**: 节点 ID `14:3041`。
 
-# Epic 4: 推荐算法与选品闭环 (Recommendation Algorithm & Product Display)
+# Epic 4: 商城与支付闭环 (Ecommerce & Payment Ecosystem)
 
-**Epic 目标**: 基于诊断数据，通过 n8n 编排精准的 SQL 查询，从 Supabase 检索合适的内衣商品，并以极具说服力的方式展示给用户。
+**Epic 目标**: 基于诊断数据检索商品，并打通加购、支付、结算的全链路交易流程。
 
 ---
 
@@ -377,26 +481,8 @@
 
 **用户故事**:
 作为一名 **后端开发人员**，
-我想要 **n8n 根据诊断出的尺码和特征（如“圆盘型”）动态生成并执行 PostgreSQL 查询**，
-以便 **从数据库中精准捞出符合用户身体特征且有库存的商品**。
-
-**验收标准 (Acceptance Criteria)**:
-
-- **Given** 用户诊断结果已生成 (Epic 3)。
-- **When** n8n 进入选品环节。
-- **Then** n8n 根据诊断数据构建 SQL 查询：
-  - **尺码匹配**: 查询 `size_available` JSONB 字段，确保 `final_size` (e.g., "75C") 库存 > 0。
-  - **胸型匹配**: 确保 `suitable_shapes` 数组包含用户的胸型 (e.g., "round")。
-  - **痛点规避**: 如果痛点含“戳腋下”，排除 `tags` 含 "high_side_ratio" 的商品。
-- **And** 执行查询并限制返回数量（如 Top 5）。
-- **And** 如果没有完美匹配的商品，执行降级策略（如：放宽痛点限制，但保留尺码匹配），并标记为“次优推荐”。
-- **And** 返回商品列表 JSON 给前端。
-
-**技术实现 (Technical Notes)**:
-
-- **Postgres Node**: 在 n8n 中直接连接 Supabase 执行 SQL。
-- **Query 示例**: `SELECT * FROM products WHERE sizes->>'75C' > '0' AND 'round' = ANY(suitable_shapes)`。
-- **排序优化**: 优先返回 `tags` 匹配度最高的商品。
+我想要 **n8n 根据诊断数据检索推荐商品**，
+以便 **精准捞出符合用户身体特征且有库存的商品**。
 
 ---
 
@@ -405,168 +491,372 @@
 **用户故事**:
 作为一名 **用户**，
 我想要 **在看到推荐商品时，明确知道“为什么这款适合我”**，
-以便 **消除我对网购内衣不合适的疑虑，放心下单**。
+以便 **放心下单**。
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** n8n 返回了推荐商品列表。
-- **When** 前端渲染推荐列表 (Recommendations Screen)。
-- **Then** 展示 **产品推荐卡片流**。
-- **And** 每个卡片包含：商品图片、名称、价格。
-- **And** **关键特性**: 卡片醒目位置展示 **“推荐理由”标签**，文案必须回扣之前的诊断。
-  - 示例：“因为你是[圆盘型]，这款的[大钢圈]能提供更好包裹”。
-- **And** 展示服务保障标签：“支持 7 天无理由退换” (必须支持，以降低决策成本)。
-- **And** **“推荐理由”标签**：使用 **`from-pink-500 to-rose-500`** 渐变背景，白字，以突出“商品推荐”的功能属性。
-- **And** 价格文本使用 **主紫色 `#8B5CF6`** 加粗显示。
-
-**技术实现 (Technical Notes)**:
-
-- **UI 组件**: 开发 `ProductCard` 组件。
-- **数据映射**: “推荐理由”可以是 n8n 返回的动态文本，也可以是前端根据 `suitable_shapes` + `tags` 拼接的模板文案。
+- **Given** n8n 返回了推荐商品。
+- **Then** 展示 **产品推荐卡片流**，背景使用 **粉红色渐变** 的“推荐理由”标签。
 
 ---
 
-### Story 4.3: 商品详情交互与模拟加购
+### Story 4.3: 购物车管理与页面开发
 
 **用户故事**:
 作为一名 **用户**，
-我想要 **点击卡片查看更多细节，并尝试购买**，
-以便 **完成交易流程（或在 MVP 阶段表达购买意向）**。
+我想要 **将心仪的内衣加入购物车，并统一管理**，
+以便 **我可以批量结算我选择的商品**。
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** 用户对某款推荐内衣感兴趣。
-- **When** 点击商品卡片。
-- **Then** 弹出详情模态窗 (Modal) 或跳转详情页。
-- **And** 展示更多实物图、包装细节（增加信任感）。
-- **And** 底部展示“去购买”或“加入购物车”按钮。
-- **And** 点击购买后，跳转到外部电商链接（一件代发源）或 记录点击行为并提示“演示模式：模拟加购成功”。
+- **Given** 用户点击了商品卡片上的“加入购物车”。
+- **When** 进入 **购物车页面** (Cart Page) (Figma 151:173)。
+- **Then** 顶部显示“购物车”标题及商品总数，背景为品牌粉紫渐变。
+- **And** 显示 **配送地址栏**: "配送至: [当前默认地址]"。
+  - **And** 分别展示 **有效商品列表 (`validList`)** 和 **失效商品列表 (`invalidList`)**。
+  - **And** 每个有效商品项包含：
+    - 左侧 **选择框**: 绑定 `selected` 字段，支持单选/取消。
+    - 商品图片: 优先使用 `sku.picUrl`，若不存在则使用 `spu.picUrl`。
+    - 商品名称: 展示 `spu.name`。
+    - 规格展示: 遍历 `sku.properties` 数组，将 `propertyName` 与 `valueName` 拼接（如：“尺码: 75D; 颜色: 黑色”）。
+    - 价格显示: 使用 `sku.price` (粉色)。
+    - **数量加减组件**: 绑定 `count` 字段，支持实时修改。
+  - **And** 失效商品项（`invalidList`）：样式置灰，不可勾选，明确标注“已失效”或相关原因。
+- **And** 底部 **操作栏**:
+  - 左侧 "全选" 复选框。
+  - 中间显示 "合计: ¥[总金额]" (金额使用 `#EC4899` 粗体)。
+  - 右侧 **“结算”按钮**: 使用品牌红粉渐变 (`linear-gradient(105deg, #DA3568, #FB7185)`)，圆角设计。
 
 **技术实现 (Technical Notes)**:
 
-- **交互**: 使用 Shadcn `Dialog` 或 `Drawer` 组件展示详情，保持上下文不中断。
-- **数据埋点**: 记录“点击跳转/加购”事件，用于计算 **推荐采纳率**。
+- 调用后端 `yudao-module-trade` 的 `AppCartController` 接口。
+- **接口路径**:
+  - 查询列表: `GET /app-api/trade/cart/list` (返回 `validList` 和 `invalidList`)。
+  - 添加购物车: `POST /app-api/trade/cart/add` (添加新的 sku_id)。
+  - 更新数量: `PUT /app-api/trade/cart/update-count` (修改已有项的数量)。
+  - 选中状态: `PUT /app-api/trade/cart/update-selected` (切换选中/不选中)。
+  - 删除商品: `DELETE /app-api/trade/cart/delete` (支持批量删除)。
+  - 总数查询: `GET /app-api/trade/cart/get-count`。
+- **数据结构映射 (`AppCartListRespVO`)**:
+  - `validList` / `invalidList` 每一项均为 `Cart` 对象。
+  - `id`: 对应购物车项的唯一编号（更新/删除时使用）。
+  - `spu.name`: 商品名称。
+  - `sku.picUrl`: 商品图片（若为空则兜底使用 `spu.picUrl`）。
+  - `sku.price`: 对应 SKU 的当前价格。
+  - `sku.properties`: 一个包含属性 ID、名称、值 ID、值名称的数组。前端需遍历并拼接 `propertyName` 和 `valueName`。
+- **数据同步 (React Query)**:
+  - 使用 `@tanstack/react-query` 的 `useQuery` 钩子管理购物车列表 (`cartList`)。
+  - 支持在进入购物车页面前的预取 (Prefetch) 逻辑，以实现无缝切换。
+  - 在全局组件（如 `BottomNav`）中共享此 Query 状态以显示购物车角标。
+- **尺码区分与 SKU 逻辑**:
+  - **添加购物车前**: 前端需通过对应的 `skuId`，并以此 ID 调用添加接口（在 productRecommendation 组件中想对应的数据有 sku_id）。
+  - **购物车列表展示**: `AppCartListRespVO` 已经返回了 `sku.properties`。前端直接遍历这个 properties 数组，提取出属性名（如“尺码”）和属性值（如“M”）进行展示即可。
+  - **在购物车中修改尺码**: 如果用户想在购物车里直接换个尺码，应该调用 `PUT /app-api/trade/cart/update-count` (重置购物车项) 接口。
+- **状态管理**: 使用 Zustand 或 React Query 同步购物车实时状态。
+- **Figma 引用**: 节点 ID `151:173`。
 
 ---
 
-### Story 4.4: 供应链服务保障信息展示
+### Story 4.6: 推荐卡片一键加购与“后悔药”撤回机制 (One-click Add to Cart & Undo Logic)
 
 **用户故事**:
-作为一名 **注重服务体验的用户**，
-我想要 **确认商家支持“7 天无理由退换”**，
-以便 **即使买回来不合适，我也有退路，不用担心浪费钱**。
+作为一名 **用户**，
+我想要 **在看到心仪的内衣推荐时，能够一键将其加入购物车**，
+并在 **发现加错或想改变主意时，能通过弹出的提示框一键撤回加购操作**，
+以便 **享受丝滑的购物体验，减少繁琐的跳转和管理成本**。
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** 商品展示环节。
-- **When** 用户浏览商品信息时。
-- **Then** 在显眼位置（如价格旁或购买按钮上方）展示服务承诺 Tag。
-- **And** 明确标注：
-  - ✅ 7 天无理由退换。
-  - ⚡️ 48 小时发货 / 一件代发。
-- **And** 商品筛选逻辑必须在后端（Story 4.1）就过滤掉不支持退换的商品。
+- **Given** 用户正在查看“满月”提供的商品推荐卡片。
+- **When** 用户点击卡片上的“加入购物车”按钮。
+- **Then** 前端应提取该商品的 `sku_id`。
+- **And** 调用后端接口 `POST /app-api/trade/cart/add`，参数包含 `skuId` 和 `count: 1`。
+- **And** 请求成功后，界面显示包含“撤回”按钮的 Toast 提示。
+- **And** 推荐卡片的按钮状态变为“已加购”（置灰或禁用）。
+- **When** 用户点击 Toast 上的“撤回”按钮。
+- **Then** 前端应立即调用后端删除接口 `DELETE /app-api/trade/cart/delete?ids={cartId}`。
+- **And** 撤回成功后，Toast 提示变为“已撤回”，且推荐卡片的按钮恢复为“加入购物车”状态。
 
 **技术实现 (Technical Notes)**:
 
-- **数据校验**: 确保 Supabase `products` 表中所有上架商品的数据源都符合 DSR 评分标准和售后要求。
-
-# Epic 5: 交付打磨与增长机制 (Refinement, Gamification & Launch)
-
-**Epic 目标**: 完善内衣深度报告以作为社交货币促进裂变，植入游戏化增长机制，并进行上线前的性能优化与边界测试，确保产品准备好面对真实流量。
+- **接口对接 (Native Fetch)**:
+  - 必须通过基于原生 `fetch` 封装的 `lib/api.ts` 进行调用，不再使用 Axios。
+  - 添加购物车: `POST /app-api/trade/cart/add`，Body: `{ skuId: number, count: number }`。
+  - 删除/撤回购物车: `DELETE /app-api/trade/cart/delete`，Query: `ids` (逗号分隔的购物车项 ID)。
+- **认证状态集成 (NextAuth)**:
+  - 在组件层或 Hook 中，通过 `useSession()` 钩子获取最新的 `accessToken`。
+  - 确保请求 Header 中包含 `Authorization: Bearer [token]`，该逻辑应由 `lib/api.ts` 的 `clientFetch` 统一处理。
+- **数据流管理 (React Query)**:
+  - 使用 `useMutation` 钩子封装加购和删除操作。
+  - **关键同步**: 在 `useMutation` 的 `onSuccess` 回调中，必须调用 `queryClient.invalidateQueries({ queryKey: ['cartList'] })`，以确保购物车全局状态同步更新。
+- **撤回逻辑实现**:
+  - `POST /trade/cart/add` 接口成功后会返回创建的购物车项 ID (`cartId`)。
+  - 前端需暂存此 `cartId` 到 Toast 的上下文或闭包中。
+  - 当用户触发“撤回”时，使用该 `cartId` 调用删除接口，模拟撤回效果。
+- **UI 组件**: 使用 `sonner` 的 `toast.custom` 自定义样式，保持设计稿的圆润紫色风格。
+- **数据流**: `isAdded` 状态应在组件层维护。为了支持“撤回”后的即时恢复，`setAddedProducts` 应在撤回接口成功后执行删除操作。
 
 ---
 
-### Story 5.1: 内衣深度报告生成 (社交货币)
+### Story 4.4: 确认订单与下单创建 (已更新细节)
 
 **用户故事**:
-作为一名 **获得“顿悟”的用户**，
-我想要 **一份精美的、可视化的“内衣深度报告”总结卡片**，
-以便 **我可以保存到相册或分享给闺蜜，展示我的新发现（建立社交优越感）**。
+作为一名 **用户**，
+我想要 **在支付前核对收货地址、预览费用并正式提交订单**，
+以便 **产生支付所需的订单单号并进入结算环节**。
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** 诊断和推荐流程已全部完成。
-- **When** 用户点击“生成报告”或流程自动结束。
-- **Then** 展示 **报告总结页 (Report Screen)**。
-- **And** 报告包含：
-  - 用户的 3D 身体蓝图截图（带标注）。
-  - 醒目的 **“新旧尺码对比”**：划掉旧尺码，高亮新尺码。
-  - 核心标签（如“圆盘型”、“高鸡心杀手”）。
-- **And** 提供“保存图片”或“分享给姐妹”按钮。
-- **And** (可选 MVP+) 生成一张包含小程序码/URL 的海报图片，用于朋友圈传播。
-- **And** 报告整体视觉风格使用 **`from-blue-500 to-purple-500`** 的“深度报告”专属渐变色调。
-- **And** 核心结论文字使用最深色 `#030213` 确保可读性。
-- **And** 分享按钮使用 **主品牌渐变 (Purple to Pink)**。
+- **Given** 用户在购物车点击“结算”。
+- **结算预览**:
+  - **When** 进入页面，调用 `GET /app-api/trade/order/settlement` 获取实时计价。
+- **地址与支付偏好**:
+  - 支持地址的增删改查（参考前序逻辑）。
+  - 用户可选择支付方式（微信/支付宝）。
+  - 在购物车界面选择的地址需要随着进入结算页时自动选中
+  - 在结算页的地址栏中，需要展示当前选中的地址信息
+- **下单执行**:
+  - **When** 点击“立即支付”。
+  - **Then** 调用 `POST /app-api/trade/order/create`。
+  - **And** **数据返回解析**: 必须获取返回的 `id` (交易订单号) 和 `payOrderId` (支付单编号)。
+  - **And** 成功后，立即将 `payOrderId` 传递给支付模块 (Story 4.5)。
 
 **技术实现 (Technical Notes)**:
 
-- **UI 实现**: 使用 HTML-to-Image 库（如 `html2canvas` 或 `satori`）在客户端或服务端生成分享图。
-- **数据埋点**: 记录“保存/分享”事件，作为核心增长指标。
+- **接口**: `POST /app-api/trade/order/create`。
+- **返回结构**: `AppTradeOrderCreateRespVO` 包含 `id` 和 `payOrderId`。
 
 ---
 
-### Story 5.2: 游戏化激励机制 (限时礼包)
+### Story 4.5: 支付提交、环境唤起与状态查询 (已更新逻辑)
 
 **用户故事**:
-作为一名 **完成测量的用户**，
-我想要 **获得一个随机的优惠券或小礼品奖励**，
-以便 **我有更强的动力去点击推荐商品并完成首次下单**。
+作为一名 **已产生支付单的用户**，
+我想要 **系统自动根据我的访问设备选择最合适的支付方式**，
+以便 **我能丝滑地完成支付流程而不受环境限制**。
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** 用户浏览完推荐商品。
-- **When** 页面停留一定时间或准备离开时。
-- **Then** 弹出一个 **“惊喜盲盒”或“限时礼包”** 动效。
-- **And** 提示文案模仿拼多多风格：“恭喜！你解锁了限时内衣津贴...”。
-- **And** 奖励内容可以是：
-  - 模拟的“满减券”（在模拟加购时抵扣）。
-  - 或者真实的电商优惠码（如果已对接真实商家）。
-- **And** 在整个流程中展示 **进度条 (Progress Bar)**，并提示“进度已达 80%”，利用沉没成本防止中途流失。
+- **端环境识别与渠道自动选择**:
+  - **支付宝 (Alipay)**:
+    - **Given** 用户选择支付宝。
+    - **When** 在 **手机端浏览器** 访问。
+    - **Then** 自动设 `channelCode: "alipay_wap"`，返回 URL 后直接唤起支付宝 App。
+    - **When** 在 **电脑端浏览器** 访问。
+    - **Then** 自动设 `channelCode: "alipay_pc"`，返回 PC 支付页面 URL。
+  - **微信 (WeChat)**:
+    - **Given** 用户选择微信。
+    - **When** 在 **微信 App 内浏览器** 访问。
+    - **Then** 自动设 `channelCode: "wx_pub"` (需传递 `openid`)。
+    - **When** 在 **手机普通浏览器** (非微信) 访问。
+    - **Then** 自动设 `channelCode: "wx_wap"`。
+    - **When** 在 **电脑端浏览器** 访问。
+    - **Then** 自动设 `channelCode: "wx_native"`，前端需将返回的链接转换为二维码展示。
+- **支付提交 (Payment Submission)**:
+  - **Given** 已从 Story 4.4 获取 `payOrderId`。
+  - **When** 调用 `POST /app-api/pay/order/submit`。
+  - **And** 参数包含：`id` (payOrderId), `channelCode` (根据上述规则确定), `returnUrl`, `displayMode: "url"`。
+  - **Then** 根据 `displayContent` 执行跳转或二维码渲染。
+- **支付结果页与状态查询**:
+  - **Given** 用户支付完成回跳。
+  - **Then** 进入结果页，启动 **2s 间隔的定时轮询** 查询订单支付状态。
+- **错误处理规范**:
+  - 网络/业务错误需显示友好提示；Token 过期自动清理并重定向。
 
 **技术实现 (Technical Notes)**:
 
-- **状态管理**: 在 Zustand store 中维护 `progress` 状态，并在顶部导航栏实时渲染。
-- **交互**: 简单的 Lottie 动画或 CSS 动画实现开箱效果。
+- **核心接口**: `POST /app-api/pay/order/submit`。
+- **设备识别**: 需封装 `getPaymentChannel(platform, browser)` 工具函数进行 `channelCode` 的自动判定。
+- **二维码生成**: 电脑端微信支付需使用 `qrcode.react` 等库渲染 `displayContent`。
+
+# Epic 5: 用户中心与售后闭环 (User Profile & Post-Sales)
+
+**Epic 目标**: 提供完整的账户管理、订单追踪及退换货支持。
 
 ---
 
-### Story 5.3: 边界处理与安全护栏 (Guardrails)
+### Story 5.5: 个人中心与订单列表 (已更新细节)
 
 **用户故事**:
-作为一名 **运营人员**，
-我想要 **Agent 能够礼貌地拒绝非内衣相关的话题**，
-以便 **维持“专业内衣顾问”的人设，并防止 LLM 产生不可控的内容**。
+作为一名 **用户**，
+我想要 **在“我的”页面查看我的个人信息和订单状态，并能管理账户安全和基本资料**，
+以便 **跟踪我的购买历史并保持账号信息的准确性**。
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** 用户在自由对话框中发送了无关内容（如“今天天气怎么样”或敏感话题）。
-- **When** n8n 识别到意图属于 `off_topic`。
-- **Then** “满月”回复预设话术：“我在全神贯注研究适合你的内衣，这种超纲题就别考我啦！咱们还是聊聊怎么让你找到天选内衣吧？”。
-- **And** 不触发任何数据库查询或推荐逻辑。
+- **个人中心主页 (Figma 152:78)**:
+  - **Given** 用户点击底部导航栏的“我的”。
+  - **When** 页面加载。
+  - **Then** 调用 `/app-api/member/user/get` 获取数据。
+  - **And** 展示：用户头像 (`avatar`)、昵称 (`nickname`) 和 ID。
+  - **And** 提供菜单项：我的订单、我的售后、收货地址、关于我们、设置。
+- **设置与资料修改 (Figma 166:361)**:
+  - **When** 点击“设置”。
+  - **Then** 进入设置页，提供“修改密码”和“修改个人资料”入口。
+  - **And** 点击“修改资料”支持更新 `nickname` 和 `avatar` (调用 `/app-api/member/user/update`)。
+  - **And** 点击“修改密码”进入密码变更流程 (调用 `/app-api/member/user/update-password`)。
+  - **And** **交互与导航逻辑**:
+    - 子页面（设置、修改资料、修改密码）必须包含“返回”按钮，且遵循物理返回路径（如：修改资料 -> 设置 -> 个人中心）。
+    - 当用户通过底部导航栏切换到其他 Tab（如“聊天”）再返回“我的”时，应保持在离开前的页面（即状态保持），除非用户再次点击已选中的“我的”图标，此时应重置到个人中心主页。
+- **订单列表分页**:
+  - **When** 点击“我的订单”。
+  - **Then** 调用 `/app-api/trade/order/page` 渲染订单分页列表。
+  - **And** 使用 **Shadcn/UI Pagination** 组件进行翻页控制。
+  - **And** 修改资料和修改密码时，必须使用shadcn/ui的Form组件来处理表单提交
+  - **And** 每项订单展示包含：订单 ID、编号 (`no`)、状态 (`status`)、实付金额 (`payPrice`) 及订单项列表 (`items`)。
 
 **技术实现 (Technical Notes)**:
 
-- **n8n Logic**: 在 LLM Chain 的 System Prompt 中明确界定话题边界。
-- **Prompt 示例**: "You are Moon, an underwear expert. If the user asks about anything other than body measurement, lingerie, or breast health, politely steer the conversation back using this script..."
+- **API 接口集成**:
+  - 获取资料: `GET /app-api/member/user/get` -> 结构体 `AppMemberUserInfoRespVO`。
+  - 更新资料: `PUT /app-api/member/user/update` -> Body 包含 `nickname`, `avatar`。
+  - 修改密码: `PUT /app-api/member/user/update-password` -> Body 包含 `oldPassword`, `newPassword`。
+  - 订单分页: `GET /app-api/trade/order/page` -> 返回 `PageResultAppTradeOrderPageItemRespVO`。
+- **UI & 路由**:
+  - **Figma 引用**: 个人中心 `152:78`，设置页 `166:361`。
+  - **组件库**: 引入 Shadcn/UI 的 `Pagination`, `Avatar`, `Skeleton` (用于加载态)。
+  - **路由模式**: 建议使用 Next.js 嵌套路由 (`/profile/settings`, `/profile/orders`)。
+- **数据管理**:
+  - 使用 `@tanstack/react-query` 的 `useQuery` 获取用户信息，并在资料更新成功后通过 `queryClient.invalidateQueries` 触发实时刷新。
+  - 使用 `useForm` 处理修改资料和密码的表单提交。
 
 ---
 
-### Story 5.4: SEO 配置与移动端性能优化
+### Story 5.6: 退换货流程支持 (售后服务)
 
 **用户故事**:
-作为一名 **开发人员**，
-我想要 **配置好网站的 SEO 信息并优化加载速度**，
-以便 **用户在微信分享时能看到漂亮的卡片，且打开页面流畅无白屏**。
+作为一名 **购买后不合适的用户**，
+我想要 **在线申请退换货**，
+以便 **即使买错也能获得完善的售后保障**。
 
 **验收标准 (Acceptance Criteria)**:
 
-- **Given** 项目准备上线。
-- **When** 部署到 Vercel 并通过域名访问。
-- **Then** 网页 `<head>` 包含正确的 Title ("满月 Moon - 你的内衣选购专家"), Description, Open Graph (OG) 图片。
-- **And** **移动端适配测试通过**：在 iOS Safari 和 Android 微信浏览器中，布局无错位，3D 引导图加载迅速。
-- **And** **冷启动优化**：首屏内容（欢迎语）不依赖 n8n 实时返回，而是作为静态资源或极速 API 返回。
+- **Given** 订单处于“已完成”或“已收货”状态。
+- **When** 在“我的售后”中发起退款/退货申请。
+- **Then** 用户可以上传照片、填写原因。
+- **And** 后端记录售后申请，并同步更新订单状态为“售后中”。
 
 **技术实现 (Technical Notes)**:
 
-- **Next.js Metadata**: 在 `layout.tsx` 或 `page.tsx` 中使用 Metadata API 配置 OG tags。
-- **Vercel**: 配置生产环境环境变量，确保存储在 Supabase 的图片资源已开启 CDN 加速。
+- 调用 `yudao-module-trade` 的售后相关接口。
+- 确保符合 PRD 中“支持 7 天无理由退换”的承诺。
+
+---
+
+### Story 5.7: 订单详情与生命周期管理 (详情、收货、物流、取消)
+
+**用户故事**:
+作为一名 **已下单用户**，
+我想要 **查看订单详情、追踪物流并在收到货后确认收货，或者在必要时取消订单**，
+以便 **掌握订单的实时状态并自主管理交易流程**。
+
+**验收标准 (Acceptance Criteria)**:
+
+- **订单详情 (Order Detail)**:
+  - **When** 用户在订单列表中点击某项订单。
+  - **Then** 跳转至详情页，调用 `GET /app-api/trade/order/get-detail`。
+  - **And** 展示：收货地址、物流信息摘要、商品清单（调用 `GET /app-api/trade/order/item/get` 可获取单项详情）、订单费用明细（总价、运费、优惠）、订单状态时间线。
+- **物流追踪**:
+  - **When** 用户点击“查看物流”。
+  - **Then** 调用 `GET /app-api/trade/order/get-express-track-list`。
+  - **And** 展示时间倒序的物流节点列表。
+- **状态操作与生命周期**:
+  - **取消订单**: 对于“待付款”订单，支持点击“取消”，调用 `DELETE /app-api/trade/order/cancel`。
+  - **确认收货**: 对于“已发货”订单，支持点击“确认收货”，调用 `PUT /app-api/trade/order/receive`。
+  - **删除订单**: 对于“已关闭”或“已完成”订单，支持点击“删除”，调用 `DELETE /app-api/trade/order/delete`。
+
+**技术实现 (Technical Notes)**:
+
+- **API 集成**:
+  - 详情获取: `GET /app-api/trade/order/get-detail`。
+  - 物流查询: `GET /app-api/trade/order/get-express-track-list`。
+  - 确认收货: `PUT /app-api/trade/order/receive`。
+  - 取消订单: `DELETE /app-api/trade/order/cancel`。
+  - 删除订单: `DELETE /app-api/trade/order/delete`。
+  - 支付状态手动同步 (模拟用): `POST /app-api/trade/order/update-paid`。
+- **UI 交互**:
+  - 操作按钮（如“确认收货”）需增加二次确认弹窗 (`AlertDialog`)。
+  - 订单状态变更后，触发 `queryClient.invalidateQueries({ queryKey: ['orderList'] })` 刷新列表和详情。
+
+---
+
+### Story 5.8: 订单项评价系统
+
+**用户故事**:
+作为一名 **已收货用户**，
+我想要 **对购买的商品进行评价**，
+以便 **分享我的穿戴感受并获得积分奖励**。
+
+**验收标准 (Acceptance Criteria)**:
+
+- **评价提交**:
+  - **Given** 订单项状态为“待评价”。
+  - **When** 用户点击“评价”。
+  - **Then** 跳转至评价界面。
+  - **And** 支持星级评分、输入文字、上传图片。
+  - **And** 点击“提交”调用 `POST /app-api/trade/order/item/create-comment`。
+- **状态反馈**:
+  - **Then** 评价成功后，该订单项状态更新为“已评价”，并跳转回订单详情页。
+
+**技术实现 (Technical Notes)**:
+
+- **API 接口**: `POST /app-api/trade/order/item/create-comment`。
+- **UI 组件**: 使用 Shadcn/UI 的 `Textarea` 和自定义的 `StarRating` 组件。
+
+---
+
+### Story 5.9: 全功能地址管理系统 (选择与管理模式)
+
+**用户故事**:
+作为一名 **用户**，
+我想要 **通过统一的地址管理系统在购物结算时选择配送地址，或在个人中心维护我的地址库**，
+以便 **我能高效地管理收货信息并享受流畅的下单体验**。
+
+**验收标准 (Acceptance Criteria)**:
+
+1. **统一地址列表页 (`/profile/addresses`)**:
+
+   - **Given** 用户访问地址列表页。
+   - **管理模式 (Default)**:
+     - **When** 从“个人中心”进入。
+     - **Then** 点击地址项进入“编辑表单”；点击“添加新地址”按钮进入“创建表单”。
+   - **选择模式 (`?mode=select`)**:
+     - **When** 从“购物车”或“结算页”进入（携带 `callbackUrl` 参数）。
+     - **Then** 点击地址项卡片会将该地址设为当前选中的配送地址，并自动返回 `callbackUrl`。
+     - **And** 只有点击右侧的“编辑图标”才会进入编辑表单，点击卡片其余部分触发“选中”逻辑。
+
+2. **核心组件设计**:
+
+   - **AddressListItem (地址项组件)**:
+     - 展示姓名、电话、详细地址及“默认”标签。
+     - 包含明确的“编辑”图标热区。
+
+- **AddressForm (地址表单组件)**:
+  - 支持姓名、手机号、省市区选择（联动选择器）、详细地址、设为默认。
+  - **智能地址补全**: 集成 **腾讯地图 API (Javascript API GL)**，在输入详细地址时提供关键词提示（Autocomplete），并自动解析填入省市区。
+  - 支持创建模式和更新模式。
+
+3. **交互流设计 (UX Flow)**:
+   - **场景 A (结算选地址)**: 结算页地址栏 -> `/profile/addresses?mode=select&callbackUrl=/checkout` -> 点击卡片 -> 设为默认/选中 -> 回跳 `/checkout`。(购物车同理)
+   - **场景 B (中心管地址)**: 个人中心 -> `/profile/addresses` -> 点击卡片/添加 -> 进入表单 -> 保存 -> 返回列表。
+
+**技术实现 (Technical Notes)**:
+
+- **路由结构 (Next.js App Router)**:
+  - `app/profile/addresses/page.tsx`: 列表页（处理模式逻辑与 API 分发）。
+  - `app/profile/addresses/new/page.tsx`: 新建页。
+  - `app/profile/addresses/[id]/page.tsx`: 编辑页。
+- **API 接口**:
+  - 获取列表: `GET /app-api/member/address/list`
+  - 获取详情: `GET /app-api/member/address/get?id={id}`
+  - 创建地址: `POST /app-api/member/address/create`
+  - 更新地址: `PUT /app-api/member/address/update`
+  - 删除地址: `DELETE /app-api/member/address/delete?id={id}`
+  - 设为默认: `PUT /app-api/member/address/update-default?id={id}`
+- **数据管理**:
+  - 使用 `@tanstack/react-query` 管理地址列表缓存，通过 `invalidateQueries` 实现实时刷新。
+  - 在“选择模式”下，选定后可利用 `useRouter.push(callbackUrl)` 或 `useRouter.back()` 进行导航。
+- 等待加载地址时使用shadcn/ui的Skeleton组件来显示加载状态， 并且badge用于标记默认地址
+- 对于没有地址时，使用shadcn/ui的EmptyState组件来显示没有地址的提示，并且有“去添加”按钮
+- 对于没有地址时创建的地址，必须自动设为默认地址
+- 对于创建地址时，必须使用shadcn/ui的Form组件来处理表单提交

@@ -1,80 +1,52 @@
----
-stepsCompleted:
-  - step-01-validate-prerequisites
-inputDocuments:
-  - docs/sprint-artifacts/prd.md
-  - docs/sprint-artifacts/architecture.md
-  - docs/sprint-artifacts/UX.md
----
-
-# 撑撑姐 - Epic Breakdown
+# 满月 Moon - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for 撑撑姐, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
-
-## Requirements Inventory
-
-### Functional Requirements
-
-FR1: 欢迎与破冰对话：建立“满月 Moon”人设，引导用户开始测量流程。
-FR2: 身体数据采集（尺码）：通过交互式引导获取上下胸围数据，支持分支逻辑（已知/不知道）。
-FR3: 测量视觉引导：展示 3D 灰模动画（直立测下围、90 度弯腰测上围）。
-FR4: 辅助信息采集：收集身高、体重、腰围，用于 BMI 计算及算法纠偏。
-FR5: 胸型诊断交互：通过抽象 3D 图标引导用户选择最接近的胸型（圆盘、纺锤、半球）。
-FR6: 痛点诊断交互：展示带插画的卡片式多选网格，识别核心痛点（压胸、空杯、跑杯等）。
-FR7: 对话意图识别与参数提取：利用 LLM 提取用户输入的数据（如上围 88 下围 73）。
-FR8: 智能推荐算法：基于上下胸围差计算初始尺码，结合身高/体重/胸型/痛点进行 SQL 过滤。
-FR9: 选品逻辑：仅推荐支持一件代发、7 天无理由退换且高 DSR 评分的商品。
-FR10: 3D 身体蓝图报告：生成哑光灰色 3D 人台模型，标注关键分析点（如底盘宽、真实尺码）。
-FR11: 游戏化与增长机制：生成深度报告作为社交货币，包含限时礼包和进度提示。
-FR12: 边界对话处理（Guardrails）：识别非内衣相关话题并优雅回绝。
-
-### NonFunctional Requirements
-
-NFR1: 隐私保护：身体数据需加密存储，仅用于推荐计算。
-NFR2: 响应性能：对话响应 1-2 秒内完成，加载动效需流畅无白屏。
-NFR3: 移动端适配：重点优化微信 H5 环境下的 3D 资源加载与 UI 布局。
-NFR4: BFF 架构安全性：通过 Next.js API Route 转发，隐藏 n8n Webhook 和 LLM Key。
-
-### Additional Requirements
-
-- **项目启动模板**: 使用 Next.js 14+ (App Router) 结合 Tailwind CSS 和 Shadcn/UI。
-- **状态管理**: Zustand (客户端) 与 React Query (服务器端数据同步)。
-- **后端架构**: n8n 负责逻辑编排，Supabase PostgreSQL 存储商品、用户画像和对话会话。
-- **UI/UX 规范**: 紫罗兰渐变色系 (#A855F7 到 #7C3AED)，卡片式层级设计。
-- **动画实现**: Framer Motion 负责丝滑动效，GIF/WebP 序列帧作为 3D 降级方案。
-- **数据库设计**: 商品表必须支持 JSONB (size_available) 和 Array (suitable_shapes) 字段。
-
-### FR Coverage Map
-
-{{requirements_coverage_map}}
+本项目旨在通过 AI Agent 解决女性内衣选购痛点，从身体诊断到商品推荐再到支付购买，提供全链路的“闺蜜式”导购体验。
 
 ## Epic List
 
-{{epics_list}}
+- **Epic 1: 基础设施与用户账号系统 (Infrastructure & Auth)**: 环境搭建、数据库设计、BFF 连通性、微信社交登录。
+- **Epic 2: 沉浸式对话与测量引导 (Immersive Chat & Measurement)**: 对话 UI、3D 动画测量引导、辅助数据采集。
+- **Epic 3: 智能诊断引擎与可视化 (Diagnosis & Visualization)**: 胸型与痛点诊断、n8n 诊断计算、加载进度反馈。
+- **Epic 4: 推荐算法与商城闭环 (Recommendation & Shopping)**: 精准 SQL 推荐、购物车管理、支付宝集成。
+- **Epic 5: 用户中心与售后体系 (User Profile & Post-Sales)**: 订单追踪、售后申请、个人信息管理。
 
-<!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
+## Epic Detail
 
-## Epic {{N}}: {{epic_title_N}}
+### Epic 1: 基础设施与用户账号系统
 
-{{epic_goal_N}}
+目标：确立技术栈（Next.js + Supabase + n8n），实现微信登录，为用户提供个性化数据持久化基础。
 
-<!-- Repeat for each story (M = 1, 2, 3...) within epic N -->
+- Story 1.1: Next.js + Shadcn 初始化
+- Story 1.2: Supabase 数据表设计
+- Story 1.3: BFF 层与 n8n 连通
+- Story 1.4: 底部导航栏与基础布局
+- Story 1.5: 微信社交登录集成
 
-### Story {{N}}.{{M}}: {{story_title_N_M}}
+### Epic 2: 沉浸式对话与测量引导
 
-As a {{user_type}},
-I want {{capability}},
-So that {{value_benefit}}.
+目标：建立“满月”人设，通过自然的 UI 交互和视觉引导获取精确的身体数据。
 
-**Acceptance Criteria:**
+- Story 2.1: 对话界面优化
+- Story 2.2: 3D 测量引导组件
+- Story 2.3: 身高体重滑块
+- Story 2.5: Zustand 聊天记录持久化
+- Story 2.6: 全局流式对话管理与背景追更 (解决跨页中断问题)
 
-<!-- for each AC on this story -->
+### Epic 4: 推荐算法与商城闭环
 
-**Given** {{precondition}}
-**When** {{action}}
-**Then** {{expected_outcome}}
-**And** {{additional_criteria}}
+目标：将诊断结果转化为购买力，打通从“想买”到“支付完成”的闭环。
 
-<!-- End story repeat -->
+- Story 4.1: n8n 推荐逻辑 (SQL)
+- Story 4.2: 推荐理由动态展示
+- Story 4.3: 购物车页面开发
+- Story 4.4: 确认订单页面开发
+- Story 4.5: 支付宝/微信支付集成
+
+### Epic 5: 用户中心与售后体系
+
+目标：提升复购率与信任感，提供完善的售后保障。
+
+- Story 5.5: 个人中心与订单列表
+- Story 5.6: 退换货流程支持

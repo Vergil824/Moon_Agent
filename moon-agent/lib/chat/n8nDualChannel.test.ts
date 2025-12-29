@@ -1,4 +1,4 @@
-import { createN8nDualChannelJsonlParser, createN8nDualChannelSseParser } from "./n8nDualChannel";
+import { createN8nDualChannelJsonlParser, createN8nDualChannelSseParser } from "@/lib/chat/n8nDualChannel";
 
 describe("n8nDualChannel", () => {
   it("extracts <STATE> payload from SSE data and hides it from visible text", () => {

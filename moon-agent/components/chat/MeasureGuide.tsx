@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 import type { StateComponentProps } from "./StateComponents";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/lib/core/store";
 
 type DemoStep = "lower" | "upper";
 

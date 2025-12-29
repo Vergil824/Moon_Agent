@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hasVisibleContent, filterVisibleSegments } from "./contentUtils";
+import { hasVisibleContent, filterVisibleSegments } from "@/lib/utils/contentUtils";
 
 describe("hasVisibleContent", () => {
   it("returns false for empty string", () => {

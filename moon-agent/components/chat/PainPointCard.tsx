@@ -44,22 +44,22 @@ export function PainPointCard({
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2 }}
       className={`
-        relative w-full p-3 rounded-[14px] border-2 transition-colors duration-200
-        flex flex-col items-center gap-1
-        min-h-[88px]
+        relative w-full p-4 rounded-[14px] border-2 transition-colors duration-200
+        flex flex-col items-center gap-2
+        min-h-[120px]
         ${selected
           ? "border-moon-purple bg-purple-50"
           : "border-gray-200 bg-white"
         }
       `}
     >
-      {/* Icon */}
-      <div className="relative shrink-0 w-5 h-5">
+      {/* Icon - enlarged for better visibility */}
+      <div className="relative shrink-0 w-14 h-14">
         <Image
           src={imageSrc}
           alt={title}
           fill
-          sizes="20px"
+          sizes="56px"
           className="object-contain"
         />
       </div>
