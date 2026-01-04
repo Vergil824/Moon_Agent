@@ -83,6 +83,7 @@ export default function ChatPage() {
     messages,
     isTyping,
     isStreaming,
+    isTypewriterActive,
     currentState,
     addMessage,
     setCurrentState,
@@ -135,8 +136,12 @@ export default function ChatPage() {
   const isMeasurementLocked = currentStep === "size_input";
   const isSummaryPhase = currentStep === "summary";
   const allowDuringStreaming = isSummaryPhase;
+  const allowDuringTypewriter = isSummaryPhase;
   const shouldRenderState =
-    StateComponent && !isTyping && (!isStreaming || allowDuringStreaming);
+    StateComponent &&
+    !isTyping &&
+    (!isStreaming || allowDuringStreaming) &&
+    (!isTypewriterActive || allowDuringTypewriter);
 
   return (
     <div
@@ -156,7 +161,7 @@ export default function ChatPage() {
         }
       />
 
-      <ChatInput onSend={handleSend} disabled={isMeasurementLocked} />
+      <ChatInput onSend={handleSend} />
     </div>
   );
 }

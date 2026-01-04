@@ -25,7 +25,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow API routes to pass through (except our protected APIs)
-  if (pathname.startsWith("/api") && !pathname.startsWith("/api/protected")) {
+  if (
+    (pathname.startsWith("/api") && !pathname.startsWith("/api/protected")) ||
+    pathname.startsWith("/app-api")
+  ) {
     return NextResponse.next();
   }
 

@@ -1,6 +1,6 @@
 # Story 2.6: 全局流式对话管理与背景追更 (Global Streaming Management & Background Updates)
 
-Status: done
+Status: ready for review
 
 ## Story
 
@@ -20,6 +20,8 @@ Status: done
 8. **Then** 聊天气泡应正确显示后台已接收的所有内容。 (AC: 8)
 9. **And** 如果流仍在进行，应自动触发“打字机”追赶逻辑，继续显示剩余内容。 (AC: 9)
 10. **And** **不再显示** 因页面切换导致的“网络错误”或“请求失败”警告。 (AC: 10)
+11. **And** 正常流式阶段保持可读节奏：小步输出（词/1–2 字符）、tick 约 40–80ms，句读/段落处有短暂停顿，营造“思考感”。 (AC: 11)
+12. **And** 追赶阶段节奏受控：lag 大时允许加速，但须限制单次跳跃/可按句段推进；追到剩余约 200–400 字符切回正常节奏，避免瞬刷 backlog。 (AC: 12)
 
 ## Tasks / Subtasks
 
@@ -46,8 +48,16 @@ Status: done
   - 目前 `ChatPage` 使用 `typingQueueRef` 和 `setTimeout` 实现打字机效果。这种模式在页面卸载时会被销毁。
   - 方案一：在 Store 中为每条消息维护一个 `displayedContent`，并由 Store 驱动增量更新。
   - 方案二（推荐）：Store 只负责维护 `fullContent`（实际收到的完整文本）。`ChatBubble` 或 `ChatInterface` 组件内部维护一个本地的 `displayedLength`，并使用 `useEffect` 监听 `fullContent` 的变化，驱动打字动画。
+- **节奏分段与停顿**: 以 `lag = fullContent.length - displayedLength` 判断阶段。lag 小：正常流式节奏（1–2 字符/40–80ms + 标点停顿）；lag 大：catch-up 节奏（设置最大步长、可按句/段推进），追到剩余约 200–400 字符后回落正常，避免跨页返回瞬刷。
 - **追赶机制 (Catch-up Mechanism)**: 当用户从其他页面返回 `ChatPage` 时：
   - 如果该消息还在 `isStreaming` 状态，组件的打字机逻辑会发现 `displayedLength < fullContent.length`，从而自动开始快速打字，直到追平最新进度。
+
+## Dev Agent TODO
+
+- [x] 在 `ChatInterface/useTypewriter` 依据 `lag` 切换正常流式与 catch-up 节奏，剩余约 200–400 字符时切回正常（AC: 8, 9, 11, 12）。
+- [x] 正常流式节奏：小步输出（词/1–2 字符）、tick 约 40–80ms，句读/段落停顿，体现“思考感”（AC: 11）。
+- [x] Catch-up 节奏：限制单次跳跃/可按句段推进，避免跨页返回瞬刷 backlog（AC: 12）。
+- [x] 挂载时检测 `isStreaming` + `lag` 触发追赶，并确保滚动到底部；跨页流式请求不中断，`isStreaming/streamingMessageId` 正确复位，避免误报网络错误（AC: 3, 4, 5, 8, 9, 10）。
 - **SSE/Stream 处理**: 确保 `lib/n8nDualChannel.ts` 的解析器能被 Store action 正确调用，并能处理跨 chunk 的 JSON 碎片。
 
 ## References
@@ -72,6 +82,15 @@ gemini-3-flash-preview
 
 ### Completion Notes List
 
+- 调整 `ChatInterface/useTypewriter` 正常/追赶节奏：正常 2 字/60ms + 标点停顿，lag>350 进入受控 catch-up（窗口 80 字内按句段跳跃，追到 200–400 字恢复正常）；保持 `isTypewriterActive` 生命周期复位，兼容返回页面的追赶逻辑（AC: 8, 9, 11, 12）。
+- 新增用例覆盖正常节奏与 catch-up 起步（`components/chat/ChatInterface.test.tsx`）；`npm test -- components/chat/ChatInterface.test.tsx` 通过。全量 vitest 仍有现存失败（checkout、store、pay 等模块），未在此次改动内修复。
+
+### File List
+
+- moon-agent/components/chat/ChatInterface.tsx
+- moon-agent/components/chat/ChatInterface.test.tsx
+
 ### Change Log
 
 - 2025-12-26: Initial story creation based on `stories.md`.
+- 2025-12-30: 调整 ChatInterface 打字机节奏与 catch-up，补充针对正常/追赶的单测。

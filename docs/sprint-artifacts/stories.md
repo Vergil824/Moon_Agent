@@ -319,6 +319,8 @@
 - **When** 用户再次点击“聊天”返回。
 - **Then** 聊天气泡应正确显示后台已接收的所有内容。
 - **And** 如果流仍在进行，应自动触发“打字机”追赶逻辑，继续显示剩余内容。
+- **And** 正常流式阶段保持可读节奏：小步输出（词/1–2 字符）、tick 约 40–80ms，句读/段落处有短暂停顿，营造“思考感”。
+- **And** 追赶阶段受控：允许加速追平 backlog，但在剩余约 200–400 字符时切回正常节奏，并限制单次跳跃/停顿，避免瞬间刷完让用户来不及阅读。
 - **And** **不再显示** 因页面切换导致的“网络错误”或“请求失败”警告。
 
 **技术实现 (Technical Notes)**:
@@ -326,7 +328,16 @@
 - **逻辑上移**: 将 `streamAssistantReply` 函数从 `app/chat/page.tsx` 迁移到 `lib/store.ts` 的 `useChatStore` 动作中。
 - **全局单例**: 利用 Zustand Store 的单例特性，确保其生命周期贯穿整个 Session（除非刷新页面）。
 - **打字机解耦**: 将消息追加（Data Append）与打字机效果（UI Display）解耦。Store 负责数据追加，组件负责根据已读位置（Read Pointer）进行打字显示。
+- **节奏分段**: 以 `lag = fullContent.length - displayedLength` 判断阶段。lag 小走正常节奏（1–2 字符/40–80ms + 标点停顿）；lag 大进入 catch-up（限制最大步长、可按句/段推进），追到剩余约 200–400 字符后回落正常，确保跨页返回不瞬刷。
 - **追赶机制**: 在 `ChatPage` 挂载时，检查 `isStreaming` 状态，并对比当前消息的“已渲染长度”与“实际长度”，自动启动流式显示。
+
+**Dev Agent TODO**:
+
+- [ ] 在 `ChatInterface/useTypewriter` 按 `lag` 区分正常流式节奏与 catch-up 节奏，catch-up 剩余约 200–400 字符时切回正常节奏（AC: 8, 9）。
+- [ ] 正常流式节奏：小步输出（词/1–2 字符）、tick 约 40–80ms，句读/段落停顿以增强“思考感”（AC: 新增节奏要求）。
+- [ ] Catch-up 节奏：限制单次跳跃/可按句段推进，避免跨页返回瞬刷 backlog（AC: 新增节奏要求）。
+- [ ] 挂载时检测 `isStreaming` + `lag`，触发追赶并保持滚动到底部，确保跨页返回可继续播放（AC: 7, 8, 9）。
+- [ ] 确保 Store 的流式请求在路由切换时不中断，`isStreaming/streamingMessageId` 正确复位，UI 不再抛出“网络错误/请求失败”误报（AC: 3, 4, 5, 10）。
 
 # Epic 3: 智能诊断与可视化反馈 (Diagnosis Engine & Visualization)
 
@@ -702,7 +713,7 @@
   - **When** 点击“我的订单”。
   - **Then** 调用 `/app-api/trade/order/page` 渲染订单分页列表。
   - **And** 使用 **Shadcn/UI Pagination** 组件进行翻页控制。
-  - **And** 修改资料和修改密码时，必须使用shadcn/ui的Form组件来处理表单提交
+  - **And** 修改资料和修改密码时，必须使用 shadcn/ui 的 Form 组件来处理表单提交
   - **And** 每项订单展示包含：订单 ID、编号 (`no`)、状态 (`status`)、实付金额 (`payPrice`) 及订单项列表 (`items`)。
 
 **技术实现 (Technical Notes)**:
@@ -856,7 +867,7 @@
 - **数据管理**:
   - 使用 `@tanstack/react-query` 管理地址列表缓存，通过 `invalidateQueries` 实现实时刷新。
   - 在“选择模式”下，选定后可利用 `useRouter.push(callbackUrl)` 或 `useRouter.back()` 进行导航。
-- 等待加载地址时使用shadcn/ui的Skeleton组件来显示加载状态， 并且badge用于标记默认地址
-- 对于没有地址时，使用shadcn/ui的EmptyState组件来显示没有地址的提示，并且有“去添加”按钮
+- 等待加载地址时使用 shadcn/ui 的 Skeleton 组件来显示加载状态， 并且 badge 用于标记默认地址
+- 对于没有地址时，使用 shadcn/ui 的 EmptyState 组件来显示没有地址的提示，并且有“去添加”按钮
 - 对于没有地址时创建的地址，必须自动设为默认地址
-- 对于创建地址时，必须使用shadcn/ui的Form组件来处理表单提交
+- 对于创建地址时，必须使用 shadcn/ui 的 Form 组件来处理表单提交
