@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { act } from "react";
 import { ChatInterface } from "./ChatInterface";
 import { useChatStore } from "@/lib/core/store";
 
@@ -187,6 +188,86 @@ describe("ChatInterface", () => {
 
     const messages = screen.getAllByTestId(/^message-bubble-/);
     expect(messages).toHaveLength(3);
+  });
+
+  it("keeps normal streaming pace for small lag (typewriter)", () => {
+    vi.useFakeTimers();
+
+    const fullContent = "你好，世界";
+    const setIsTypewriterActive = vi.fn();
+
+    vi.mocked(useChatStore).mockReturnValue({
+      messages: [
+        {
+          id: "normal-1",
+          role: "assistant",
+          content: "",
+          fullContent,
+          timestamp: Date.now()
+        }
+      ],
+      isTyping: false,
+      streamingMessageId: "normal-1",
+      setIsTypewriterActive,
+      setHasAutoOpenedCurrentState: vi.fn()
+    });
+
+    render(<ChatInterface />);
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
+    const bubble = screen.getByTestId("message-bubble-normal-1");
+    const firstLength = bubble.textContent?.length ?? 0;
+    expect(firstLength).toBeGreaterThan(0);
+    expect(firstLength).toBeLessThan(fullContent.length);
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
+    const secondLength = bubble.textContent?.length ?? 0;
+    expect(secondLength - firstLength).toBeLessThanOrEqual(2);
+
+    vi.useRealTimers();
+  });
+
+  it("enters catch-up mode for large lag without instant flush", () => {
+    vi.useFakeTimers();
+
+    const longContent = "流式".repeat(200); // 400 chars, ensures catch-up path
+    const setIsTypewriterActive = vi.fn();
+
+    vi.mocked(useChatStore).mockReturnValue({
+      messages: [
+        {
+          id: "catchup-1",
+          role: "assistant",
+          content: "",
+          fullContent: longContent,
+          timestamp: Date.now()
+        }
+      ],
+      isTyping: false,
+      streamingMessageId: "catchup-1",
+      setIsTypewriterActive,
+      setHasAutoOpenedCurrentState: vi.fn()
+    });
+
+    render(<ChatInterface />);
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+
+    const bubble = screen.getByTestId("message-bubble-catchup-1");
+    const lengthAfterFirstTick = bubble.textContent?.length ?? 0;
+
+    expect(lengthAfterFirstTick).toBeGreaterThan(4);
+    expect(lengthAfterFirstTick).toBeLessThan(longContent.length);
+
+    vi.useRealTimers();
   });
 });
 

@@ -19,7 +19,7 @@ development_status:
   2-3-auxiliary-data-collection: done
   2-4-n8n-intent-recognition-param-extraction: backlog
   2-5-zustand-chat-persistence: review
-  2-6-global-streaming-management: done
+  2-6-global-streaming-management: review
   epic-2-retrospective: optional
 
   epic-3: in-progress

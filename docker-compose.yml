@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Java Backend (yudao-server)
+  backend:
+    build:
+      context: ./Payment_Interface
+      dockerfile: yudao-server/Dockerfile
+    container_name: moon-backend
+    ports:
+      - '48080'
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      # Redis settings (recommended: connect to an external Redis container via shared network)
+      - SPRING_REDIS_HOST=${SPRING_REDIS_HOST:-redis-server}
+      - SPRING_REDIS_PORT=${SPRING_REDIS_PORT:-6379}
+    networks:
+      - default
+      - redis_network
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./moon-agent
+      dockerfile: Dockerfile
+    container_name: moon-frontend
+    ports:
+      - '3824'
+    depends_on:
+      - backend
+    networks:
+      - default
+
+networks:
+  redis_network:
+    # A pre-existing user-defined network shared with the external Redis container
+    external: true

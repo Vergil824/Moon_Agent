@@ -7,8 +7,16 @@ import ReactMarkdown from "react-markdown";
 import { useChatStore, useChatStoreHydrated, Message } from "@/lib/core/store";
 import { hasVisibleContent, filterVisibleSegments } from "@/lib/utils/contentUtils";
 
-// Story 2.6: Typewriter delay in milliseconds (instant in tests)
-const TYPE_DELAY_MS = process.env.NODE_ENV === "test" ? 0 : 15;
+// Story 2.6: Typewriter timing constants (AC: 11, 12)
+const IS_TEST_ENV = process.env.NODE_ENV === "test";
+const NORMAL_DELAY_MS = IS_TEST_ENV ? 1 : 60; // Normal pace tick 40–80ms
+const CATCHUP_DELAY_MS = IS_TEST_ENV ? 1 : 20; // Faster tick during catch-up
+const PUNCTUATION_PAUSE_MS = IS_TEST_ENV ? 1 : 120; // Short pause at punctuation
+const NORMAL_STEP = 2; // 1–2 chars per tick for normal streaming
+const MIN_CATCHUP_STEP = 6; // Prevents micro-steps during catch-up
+const MAX_CATCHUP_STEP = 80; // Bound single jump to avoid instant flush
+const CATCHUP_THRESHOLD = 350; // Switch back to normal when lag <= ~200–400
+const SENTENCE_BOUNDARY = /[。！？!?；;，,、\n]/;
 
 /**
  * Bot avatar component - displays the 撑撑姐 avatar
@@ -159,7 +167,7 @@ function useTypewriter(fullContent: string, isCurrentlyStreaming: boolean): stri
     };
   }, [isCurrentlyStreaming, setIsTypewriterActive]);
 
-  // Story 2.6: Typewriter effect with catch-up logic (AC: 9)
+  // Story 2.6: Typewriter effect with catch-up logic (AC: 8, 9, 11, 12)
   useEffect(() => {
     // If displayed length is already at full content, nothing to do
     if (displayedLength >= fullContent.length) {
@@ -182,15 +190,40 @@ function useTypewriter(fullContent: string, isCurrentlyStreaming: boolean): stri
       clearTimeout(timerRef.current);
     }
 
-    // Story 2.6: Dynamic typing speed based on lag (AC: 9)
-    // If we're far behind (e.g. catch-up), type faster. Otherwise type 1 char at a time.
-    const lag = fullContent.length - displayedLength;
-    const charsToType = lag > 50 ? Math.ceil(lag / 5) : 1; 
+    const lag = fullContentRef.current.length - displayedLength;
+    const isCatchUp = lag > CATCHUP_THRESHOLD;
 
-    // Schedule next character(s)
-    timerRef.current = setTimeout(() => {
-      setDisplayedLength((prev) => Math.min(prev + charsToType, fullContentRef.current.length));
-    }, TYPE_DELAY_MS);
+    const scheduleNext = () => {
+      const content = fullContentRef.current;
+      const remaining = content.length - displayedLength;
+
+      // Normal streaming: small steps, keep rhythm and punctuation pauses
+      if (!isCatchUp) {
+        const step = Math.min(NORMAL_STEP, remaining);
+        const nextLength = displayedLength + step;
+        const nextChar = content.charAt(nextLength - 1);
+        const pause =
+          nextChar && SENTENCE_BOUNDARY.test(nextChar) ? PUNCTUATION_PAUSE_MS : 0;
+
+        timerRef.current = setTimeout(() => {
+          setDisplayedLength(nextLength);
+        }, NORMAL_DELAY_MS + pause);
+        return;
+      }
+
+      // Catch-up mode: bounded jumps with sentence/segment awareness
+      const window = content.slice(displayedLength, displayedLength + MAX_CATCHUP_STEP);
+      const boundaryIndex = window.search(SENTENCE_BOUNDARY);
+      const boundaryStep = boundaryIndex >= 0 ? boundaryIndex + 1 : window.length;
+      const step = Math.min(remaining, Math.max(MIN_CATCHUP_STEP, boundaryStep));
+      const nextLength = displayedLength + step;
+
+      timerRef.current = setTimeout(() => {
+        setDisplayedLength(nextLength);
+      }, CATCHUP_DELAY_MS);
+    };
+
+    scheduleNext();
 
     return () => {
       if (timerRef.current) {

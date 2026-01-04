@@ -19,12 +19,15 @@ export class ApiError extends Error {
 }
 
 // Backend API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:48080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL !== undefined 
+  ? process.env.NEXT_PUBLIC_API_BASE_URL 
+  : "http://localhost:48080";
 
 // Default headers
 const defaultHeaders: HeadersInit = {
   "Content-Type": "application/json",
-  "tenant-id": "1"
+  "tenant-id": "1",
+  "X-Forwarded-For": "127.0.0.1"
 };
 
 type FetchOptions = {

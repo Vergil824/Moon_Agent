@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, ShoppingCart, RefreshCw } from "lucide-react";
+import { Suspense, useState, useMemo, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AlertCircle, ShoppingCart, RefreshCw } from 'lucide-react';
 import {
   CheckoutHeader,
   CheckoutSkeleton,
@@ -14,8 +14,8 @@ import {
   PriceSummary,
   CheckoutFooter,
   type PaymentMethod,
-} from "@/components/checkout";
-import { Button } from "@/components/ui/button";
+} from '@/components/checkout';
+import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +24,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useCheckout } from "@/lib/payment/useSettlement";
-import { useAddress } from "@/lib/address/useAddress";
-import { useSelectedAddressStore } from "@/lib/address/addressStore";
-import { calculateTotalCount, type SettlementAddress } from "@/lib/order/orderApi";
+} from '@/components/ui/alert-dialog';
+import { useCheckout } from '@/lib/payment/useSettlement';
+import { useAddress } from '@/lib/address/useAddress';
+import { useSelectedAddressStore } from '@/lib/address/addressStore';
+import {
+  calculateTotalCount,
+  type SettlementAddress,
+} from '@/lib/order/orderApi';
 
 /**
  * Checkout Page - Order confirmation page
@@ -47,15 +50,41 @@ import { calculateTotalCount, type SettlementAddress } from "@/lib/order/orderAp
  */
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutPageFallback />}>
+      <CheckoutPageContent />
+    </Suspense>
+  );
+}
+
+function CheckoutPageFallback() {
+  return (
+    <div
+      data-testid='checkout-page'
+      className='flex flex-col min-h-screen bg-gradient-to-b from-[#FFF5F7] to-[#FAF5FF]'
+    >
+      <CheckoutHeader />
+      <main className='flex-1 pt-[52px] pb-[120px] px-3'>
+        <div className='mt-3 space-y-3'>
+          <CheckoutSkeleton />
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Form state
-  const [remark, setRemark] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("alipay");
-  const [selectedExpressId, setSelectedExpressId] = useState<number | null>(null);
+  const [remark, setRemark] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('alipay');
+  const [selectedExpressId, setSelectedExpressId] = useState<number | null>(
+    null
+  );
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Address state - sync from cart selection or default
   const { addresses, defaultAddress, isLoading: addressLoading } = useAddress();
@@ -63,7 +92,7 @@ export default function CheckoutPage() {
 
   // Get selected address ID from query params (if coming back from address selection)
   useEffect(() => {
-    const addressIdParam = searchParams.get("addressId");
+    const addressIdParam = searchParams.get('addressId');
     if (addressIdParam) {
       const addressId = parseInt(addressIdParam, 10);
       if (!isNaN(addressId)) {
@@ -83,7 +112,7 @@ export default function CheckoutPage() {
         return {
           displayAddress: {
             ...selected,
-            areaName: selected.areaName || "",
+            areaName: selected.areaName || '',
           },
           effectiveAddressId: selected.id,
         };
@@ -93,7 +122,7 @@ export default function CheckoutPage() {
       return {
         displayAddress: {
           ...defaultAddress,
-          areaName: defaultAddress.areaName || "",
+          areaName: defaultAddress.areaName || '',
         },
         effectiveAddressId: defaultAddress.id,
       };
@@ -127,20 +156,20 @@ export default function CheckoutPage() {
 
   // Handle address card press - navigate to address selection
   const handleAddressPress = useCallback(() => {
-    router.push("/profile/addresses?mode=select&callbackUrl=/checkout");
+    router.push('/profile/addresses?mode=select&callbackUrl=/checkout');
   }, [router]);
 
   // Handle order submission
   const handleSubmit = useCallback(async () => {
     // Validation
     if (!displayAddress) {
-      setErrorMessage("请先选择收货地址");
+      setErrorMessage('请先选择收货地址');
       setErrorDialogOpen(true);
       return;
     }
 
     if (items.length === 0) {
-      setErrorMessage("订单中没有商品");
+      setErrorMessage('订单中没有商品');
       setErrorDialogOpen(true);
       return;
     }
@@ -163,36 +192,48 @@ export default function CheckoutPage() {
 
       // Success - navigate to payment submit page with payOrderId
       // Story 4.5: Payment submit page handles channel selection and payment initiation
-      router.push(`/pay/submit?payOrderId=${result.payOrderId}&orderId=${result.id}&method=${paymentMethod}`);
+      router.push(
+        `/pay/submit?payOrderId=${result.payOrderId}&orderId=${result.id}&method=${paymentMethod}`
+      );
     } catch {
       // Error handling - show toast/dialog
-      setErrorMessage(createOrderError?.message || "订单创建失败，请稍后重试");
+      setErrorMessage(createOrderError?.message || '订单创建失败，请稍后重试');
       setErrorDialogOpen(true);
     }
-  }, [displayAddress, items, remark, createOrder, router, paymentMethod, createOrderError]);
+  }, [
+    displayAddress,
+    items,
+    remark,
+    createOrder,
+    router,
+    paymentMethod,
+    createOrderError,
+  ]);
 
   // Render error state
   if (settlementError && !isLoading) {
     return (
       <div
-        data-testid="checkout-page"
-        className="flex flex-col min-h-screen bg-gradient-to-b from-[#FFF5F7] to-[#FAF5FF]"
+        data-testid='checkout-page'
+        className='flex flex-col min-h-screen bg-gradient-to-b from-[#FFF5F7] to-[#FAF5FF]'
       >
         <CheckoutHeader />
-        <main className="flex-1 pt-[52px] px-3 flex flex-col items-center justify-center">
-          <div className="size-20 rounded-full bg-red-50 flex items-center justify-center">
-            <ShoppingCart className="size-10 text-red-400" />
+        <main className='flex-1 pt-[52px] px-3 flex flex-col items-center justify-center'>
+          <div className='size-20 rounded-full bg-red-50 flex items-center justify-center'>
+            <ShoppingCart className='size-10 text-red-400' />
           </div>
-          <h2 className="mt-4 text-xl font-semibold text-moon-text">加载失败</h2>
-          <p className="mt-2 text-sm text-moon-text-muted text-center max-w-xs">
-            {settlementError.message || "网络异常，请稍后重试"}
+          <h2 className='mt-4 text-xl font-semibold text-moon-text'>
+            加载失败
+          </h2>
+          <p className='mt-2 text-sm text-moon-text-muted text-center max-w-xs'>
+            {settlementError.message || '网络异常，请稍后重试'}
           </p>
           <Button
             onClick={() => window.location.reload()}
-            variant="outline"
-            className="mt-6"
+            variant='outline'
+            className='mt-6'
           >
-            <RefreshCw className="size-4 mr-2" />
+            <RefreshCw className='size-4 mr-2' />
             刷新页面
           </Button>
         </main>
@@ -202,15 +243,15 @@ export default function CheckoutPage() {
 
   return (
     <div
-      data-testid="checkout-page"
-      className="flex flex-col min-h-screen bg-gradient-to-b from-[#FFF5F7] to-[#FAF5FF]"
+      data-testid='checkout-page'
+      className='flex flex-col min-h-screen bg-gradient-to-b from-[#FFF5F7] to-[#FAF5FF]'
     >
       {/* Checkout Header */}
       <CheckoutHeader />
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-[52px] pb-[120px] px-3">
-        <div className="mt-3 space-y-3">
+      <main className='flex-1 pt-[52px] pb-[120px] px-3'>
+        <div className='mt-3 space-y-3'>
           {isLoading ? (
             <CheckoutSkeleton />
           ) : (
@@ -257,10 +298,10 @@ export default function CheckoutPage() {
 
       {/* Error Dialog */}
       <AlertDialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
-        <AlertDialogContent className="max-w-[85vw] rounded-[20px] sm:max-w-lg">
+        <AlertDialogContent className='max-w-[85vw] rounded-[20px] sm:max-w-lg'>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="size-5 text-red-500" />
+            <AlertDialogTitle className='flex items-center gap-2'>
+              <AlertCircle className='size-5 text-red-500' />
               提示
             </AlertDialogTitle>
             <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
@@ -268,7 +309,7 @@ export default function CheckoutPage() {
           <AlertDialogFooter>
             <AlertDialogAction
               onClick={() => setErrorDialogOpen(false)}
-              className="rounded-full bg-moon-purple hover:bg-moon-purple/90"
+              className='rounded-full bg-moon-purple hover:bg-moon-purple/90'
             >
               知道了
             </AlertDialogAction>
