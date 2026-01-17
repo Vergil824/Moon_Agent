@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
@@ -58,35 +57,7 @@ export default function WelcomePage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-[100] h-screen w-full overflow-hidden"
-      style={{
-        // Gradient matching background image edges (dark blue/purple tones)
-        background: "linear-gradient(180deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)"
-      }}
-    >
-      {/* Background Image - cover to fill screen, gradient shows on very wide screens */}
-      <motion.div
-        initial={{ scale: 1.02, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="absolute inset-0 flex items-center justify-center"
-      >
-        <Image
-          src="/assets/statics/Screenshot 2025-12-25 at 21.54.23.png"
-          alt="Welcome background"
-          fill
-          className="object-cover object-top pointer-events-none"
-          priority
-          sizes="100vw"
-        />
-      </motion.div>
-
-      {/* Content Overlay */}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
       <div className="absolute inset-0 flex flex-col items-center justify-end pb-[72px] px-6">
         {/* Button Container with stagger animation */}
         <motion.div

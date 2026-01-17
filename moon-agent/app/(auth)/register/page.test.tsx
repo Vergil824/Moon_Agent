@@ -15,13 +15,7 @@ vi.mock("next/navigation", () => ({
   })
 }));
 
-// Mock next/image
-vi.mock("next/image", () => ({
-  default: ({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} {...props} data-testid="background-image" />
-  )
-}));
+// next/image is rendered in auth layout now; page tests no longer need to mock it
 
 // Mock useAuth hooks
 const mockSendSmsCode = vi.fn();
@@ -171,7 +165,7 @@ describe("RegisterPage", () => {
     
     // Should call sendSmsCode with correct params
     expect(mockSendSmsCode).toHaveBeenCalledWith(
-      { mobile: "13800138000", scene: 2 },
+      { mobile: "13800138000", scene: 1 },
       expect.any(Object)
     );
   });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { motion, Variants } from "framer-motion";
@@ -11,13 +10,6 @@ import { usePasswordLogin } from "@/lib/auth/useAuth";
 type FormErrors = {
   mobile?: string;
   password?: string;
-};
-
-// Animation variants
-const backdropVariants: Variants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.3 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } }
 };
 
 const cardVariants: Variants = {
@@ -90,38 +82,10 @@ export default function LoginPage() {
   };
 
   return (
-    <motion.div
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      className="fixed inset-0 z-[100] h-screen w-full overflow-hidden"
-      style={{
-        // Gradient matching background image edges (dark blue/purple tones)
-        background: "linear-gradient(180deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)"
-      }}
-    >
-      {/* Background Image - cover to fill screen, gradient shows on very wide screens */}
-      <Image
-        src="/assets/statics/Screenshot 2025-12-25 at 21.54.23.png"
-        alt="Login background"
-        fill
-        className="object-cover object-top pointer-events-none"
-        priority
-        sizes="100vw"
-      />
-
-      {/* Blur Overlay with fade animation */}
-      <motion.div
-        variants={backdropVariants}
-        className="absolute inset-0 backdrop-blur-[5px] bg-black/20"
-      />
-
+    <motion.div initial="initial" animate="animate" exit="exit">
       {/* Card with slide-up animation */}
       <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 max-w-[361px] mx-auto">
-        <motion.div
-          variants={cardVariants}
-          className="bg-white rounded-[14px] shadow-xl"
-        >
+        <motion.div variants={cardVariants} className="bg-white rounded-[14px] shadow-xl">
           {/* Card Header */}
           <div className="relative px-6 pt-6 pb-2">
             {/* Close Button */}

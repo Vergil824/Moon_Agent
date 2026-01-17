@@ -15,13 +15,7 @@ vi.mock("next/navigation", () => ({
   })
 }));
 
-// Mock next/image
-vi.mock("next/image", () => ({
-  default: ({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} {...props} data-testid="background-image" />
-  )
-}));
+// next/image is rendered in auth layout now; page tests no longer need to mock it
 
 // Mock useAuth hooks
 vi.mock("@/lib/auth/useAuth", () => ({
@@ -49,14 +43,6 @@ function createWrapper() {
 describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("should render background with blur overlay", () => {
-    render(<LoginPage />, { wrapper: createWrapper() });
-    
-    // Check for backdrop blur overlay
-    const overlay = document.querySelector(".backdrop-blur-\\[5px\\]");
-    expect(overlay).toBeInTheDocument();
   });
 
   it("should render white card with correct styling", () => {

@@ -1,11 +1,14 @@
-import { createStateStreamParser, type StateStreamParserEvent } from "./chatProtocol";
-import { createSseParser } from "./sse";
+import {
+  createStateStreamParser,
+  type StateStreamParserEvent,
+} from './chatProtocol';
+import { createSseParser } from './sse';
 
 export type DualChannelEvent = StateStreamParserEvent;
 
 function looksLikeJsonPayload(data: string) {
   const t = data.trim();
-  return (t.startsWith("{") || t.startsWith("[")) && !t.includes("<STATE>");
+  return (t.startsWith('{') || t.startsWith('[')) && !t.includes('<STATE>');
 }
 
 /**
@@ -28,7 +31,7 @@ export function createN8nDualChannelSseParser() {
 
     for (const e of events) {
       if (!e.data) continue;
-      if (e.data === "[DONE]") continue;
+      if (e.data === '[DONE]') continue;
       if (looksLikeJsonPayload(e.data)) continue;
 
       const parsed = state.push(e.data);
@@ -60,12 +63,12 @@ type N8nJsonlEvent = {
  */
 export function createN8nDualChannelJsonlParser() {
   let state = createStateStreamParser();
-  let buffer = "";
+  let buffer = '';
 
   function extractTextPayload(e: N8nJsonlEvent): string | null {
-    if (typeof e.content === "string") return e.content;
-    if (typeof e.data === "string") return e.data;
-    if (typeof e.text === "string") return e.text;
+    if (typeof e.content === 'string') return e.content;
+    if (typeof e.data === 'string') return e.data;
+    if (typeof e.text === 'string') return e.text;
     return null;
   }
 
@@ -74,7 +77,7 @@ export function createN8nDualChannelJsonlParser() {
     const out: DualChannelEvent[] = [];
 
     while (true) {
-      const idx = buffer.indexOf("\n");
+      const idx = buffer.indexOf('\n');
       if (idx === -1) break;
 
       const line = buffer.slice(0, idx).trim();
@@ -89,22 +92,22 @@ export function createN8nDualChannelJsonlParser() {
         continue;
       }
 
-      const t = typeof parsed?.type === "string" ? parsed.type : "";
-      if (t !== "begin" && t !== "item" && t !== "end") continue;
+      const t = typeof parsed?.type === 'string' ? parsed.type : '';
+      if (t !== 'begin' && t !== 'item' && t !== 'end') continue;
 
       // Segment boundary: reset the <STATE> parser so multiple segments can each carry their own <STATE>.
-      if (t === "begin") {
+      if (t === 'begin') {
         state = createStateStreamParser();
       }
 
       const textPayload = parsed ? extractTextPayload(parsed) : null;
-      if (typeof textPayload === "string") {
+      if (typeof textPayload === 'string') {
         const ev = state.push(textPayload);
         if (ev.state !== undefined || ev.textDelta) out.push(ev);
       }
 
       // Also reset on "end" in case the next segment starts without an explicit "begin".
-      if (t === "end") {
+      if (t === 'end') {
         state = createStateStreamParser();
       }
     }
@@ -114,5 +117,3 @@ export function createN8nDualChannelJsonlParser() {
 
   return { push };
 }
-
-
