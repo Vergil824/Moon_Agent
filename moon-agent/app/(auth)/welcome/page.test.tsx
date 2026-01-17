@@ -13,28 +13,11 @@ vi.mock("next/navigation", () => ({
   })
 }));
 
-// Mock next/image
-vi.mock("next/image", () => ({
-  default: ({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} {...props} data-testid="background-image" />
-  )
-}));
+// next/image is rendered in auth layout now; page tests no longer need to mock it
 
 describe("WelcomePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("should render background image", () => {
-    render(<WelcomePage />);
-    
-    const bgImage = screen.getByTestId("background-image");
-    expect(bgImage).toBeInTheDocument();
-    expect(bgImage).toHaveAttribute(
-      "src",
-      expect.stringContaining("Screenshot")
-    );
   });
 
   it("should render WeChat login button with correct styling", () => {

@@ -37,6 +37,7 @@ coverage/
 
 # Payment_Interface sensitive configs
 Payment_Interface
+moon_agent_taro
 
 
 
