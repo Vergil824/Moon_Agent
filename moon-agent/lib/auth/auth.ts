@@ -1,19 +1,19 @@
-import type { NextAuthOptions, DefaultSession } from "next-auth";
-import type { JWT } from "next-auth/jwt";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { getServerSession } from "next-auth";
+import type { NextAuthOptions, DefaultSession } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { getServerSession } from 'next-auth';
 
 // Extend the built-in session types
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
       mobile: string;
-    } & DefaultSession["user"];
+    } & DefaultSession['user'];
     accessToken: string;
     refreshToken: string;
     expiresAt: number;
-    error?: "RefreshTokenError" | "RefreshAccessTokenError";
+    error?: 'RefreshTokenError' | 'RefreshAccessTokenError';
   }
 
   interface User {
@@ -25,19 +25,20 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     mobile: string;
     accessToken: string;
     refreshToken: string;
     expiresAt: number;
-    error?: "RefreshTokenError" | "RefreshAccessTokenError";
+    error?: 'RefreshTokenError' | 'RefreshAccessTokenError';
   }
 }
 
 // Backend API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:48080";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:48080';
 
 // Types for backend response
 type AuthTokens = {
@@ -54,22 +55,29 @@ type ApiResponse<T> = {
 };
 
 // Refresh access token using refresh token
-async function refreshAccessToken(refreshToken: string): Promise<AuthTokens | null> {
+async function refreshAccessToken(
+  refreshToken: string
+): Promise<AuthTokens | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/app-api/member/auth/refresh-token?refreshToken=${encodeURIComponent(refreshToken)}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "tenant-id": "1",
-        Authorization: `Bearer ${refreshToken}`,
-        // For backends that only read HttpOnly cookie, also send a Cookie header manually.
-        Cookie: `refreshToken=${refreshToken}`
-      },
-      // Some backends expect refreshToken in HttpOnly cookie; include browser cookies if available.
-      credentials: "include",
-      // Also send refreshToken in body for backends that accept JSON payload.
-      body: JSON.stringify({ refreshToken })
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/app-api/member/auth/refresh-token?refreshToken=${encodeURIComponent(
+        refreshToken
+      )}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'tenant-id': '1',
+          Authorization: `Bearer ${refreshToken}`,
+          // For backends that only read HttpOnly cookie, also send a Cookie header manually.
+          Cookie: `refreshToken=${refreshToken}`,
+        },
+        // Some backends expect refreshToken in HttpOnly cookie; include browser cookies if available.
+        credentials: 'include',
+        // Also send refreshToken in body for backends that accept JSON payload.
+        body: JSON.stringify({ refreshToken }),
+      }
+    );
 
     const result: ApiResponse<AuthTokens> = await response.json();
 
@@ -77,10 +85,10 @@ async function refreshAccessToken(refreshToken: string): Promise<AuthTokens | nu
       return result.data;
     }
 
-    console.error("Token refresh failed:", result.msg);
+    console.error('Token refresh failed:', result.msg);
     return null;
   } catch (error) {
-    console.error("Token refresh error:", error);
+    console.error('Token refresh error:', error);
     return null;
   }
 }
@@ -88,11 +96,11 @@ async function refreshAccessToken(refreshToken: string): Promise<AuthTokens | nu
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      id: "password",
-      name: "Password",
+      id: 'password',
+      name: 'Password',
       credentials: {
-        mobile: { label: "Mobile", type: "tel" },
-        password: { label: "Password", type: "password" }
+        mobile: { label: 'Mobile', type: 'tel' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.mobile || !credentials?.password) {
@@ -100,17 +108,20 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const response = await fetch(`${API_BASE_URL}/app-api/member/auth/login`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "tenant-id": "1"
-            },
-            body: JSON.stringify({
-              mobile: credentials.mobile,
-              password: credentials.password
-            })
-          });
+          const response = await fetch(
+            `${API_BASE_URL}/app-api/member/auth/login`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'tenant-id': '1',
+              },
+              body: JSON.stringify({
+                mobile: credentials.mobile,
+                password: credentials.password,
+              }),
+            }
+          );
 
           const result: ApiResponse<AuthTokens> = await response.json();
 
@@ -121,25 +132,25 @@ export const authOptions: NextAuthOptions = {
               mobile: credentials.mobile,
               accessToken: result.data.accessToken,
               refreshToken: result.data.refreshToken,
-              expiresAt: result.data.expiresTime
+              expiresAt: result.data.expiresTime,
             };
           }
 
           // Return null for failed authentication
-          console.error("Login failed:", result.msg);
+          console.error('Login failed:', result.msg);
           return null;
         } catch (error) {
-          console.error("Login error:", error);
+          console.error('Login error:', error);
           return null;
         }
-      }
+      },
     }),
     CredentialsProvider({
-      id: "sms",
-      name: "SMS",
+      id: 'sms',
+      name: 'SMS',
       credentials: {
-        mobile: { label: "Mobile", type: "tel" },
-        code: { label: "Code", type: "text" }
+        mobile: { label: 'Mobile', type: 'tel' },
+        code: { label: 'Code', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.mobile || !credentials?.code) {
@@ -147,17 +158,20 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const response = await fetch(`${API_BASE_URL}/app-api/member/auth/sms-login`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "tenant-id": "1"
-            },
-            body: JSON.stringify({
-              mobile: credentials.mobile,
-              code: credentials.code
-            })
-          });
+          const response = await fetch(
+            `${API_BASE_URL}/app-api/member/auth/sms-login`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'tenant-id': '1',
+              },
+              body: JSON.stringify({
+                mobile: credentials.mobile,
+                code: credentials.code,
+              }),
+            }
+          );
 
           const result: ApiResponse<AuthTokens> = await response.json();
 
@@ -167,18 +181,18 @@ export const authOptions: NextAuthOptions = {
               mobile: credentials.mobile,
               accessToken: result.data.accessToken,
               refreshToken: result.data.refreshToken,
-              expiresAt: result.data.expiresTime
+              expiresAt: result.data.expiresTime,
             };
           }
 
-          console.error("SMS Login failed:", result.msg);
+          console.error('SMS Login failed:', result.msg);
           return null;
         } catch (error) {
-          console.error("SMS Login error:", error);
+          console.error('SMS Login error:', error);
           return null;
         }
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }): Promise<JWT> {
@@ -192,12 +206,12 @@ export const authOptions: NextAuthOptions = {
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
           expiresAt: user.expiresAt,
-          error: undefined
+          error: undefined,
         };
       }
 
       const expiresAt =
-        typeof currentToken.expiresAt === "string"
+        typeof currentToken.expiresAt === 'string'
           ? Number(currentToken.expiresAt)
           : currentToken.expiresAt;
 
@@ -213,7 +227,9 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Access token has expired or about to expire, try to refresh it
-      const refreshedTokens = await refreshAccessToken(currentToken.refreshToken);
+      const refreshedTokens = await refreshAccessToken(
+        currentToken.refreshToken
+      );
 
       if (refreshedTokens) {
         return {
@@ -221,14 +237,14 @@ export const authOptions: NextAuthOptions = {
           accessToken: refreshedTokens.accessToken,
           refreshToken: refreshedTokens.refreshToken,
           expiresAt: refreshedTokens.expiresTime,
-          error: undefined
+          error: undefined,
         };
       }
 
       // Refresh failed: mark explicit error so front-end can sign out
       return {
         ...currentToken,
-        error: "RefreshAccessTokenError" as const
+        error: 'RefreshAccessTokenError' as const,
       };
     },
     async session({ session, token }) {
@@ -239,16 +255,16 @@ export const authOptions: NextAuthOptions = {
       session.expiresAt = token.expiresAt;
       session.error = token.error;
       return session;
-    }
+    },
   },
   pages: {
-    signIn: "/welcome",
-    error: "/welcome"
+    signIn: '/welcome',
+    error: '/welcome',
   },
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60 // 30 days
-  }
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
 };
 
 // Helper function to get session on server side

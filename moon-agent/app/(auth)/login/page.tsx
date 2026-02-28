@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { motion, Variants } from "framer-motion";
-import { loginFormSchema, LoginFormData } from "@/lib/auth/authSchemas";
-import { usePasswordLogin } from "@/lib/auth/useAuth";
+import { phoneSchema, smsCodeSchema } from "@/lib/auth/authSchemas";
+import { useSendSmsCode, useSmsLogin } from "@/lib/auth/useAuth";
 
 type FormErrors = {
   mobile?: string;
-  password?: string;
+  code?: string;
 };
 
 const cardVariants: Variants = {
@@ -30,35 +30,82 @@ const cardVariants: Variants = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const passwordLoginMutation = usePasswordLogin();
+  const sendSmsCodeMutation = useSendSmsCode();
+  const smsLoginMutation = useSmsLogin();
 
-  const [formData, setFormData] = useState<LoginFormData>({
-    mobile: "",
-    password: ""
-  });
+  const [mobile, setMobile] = useState("");
+  const [code, setCode] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
+  const [countdown, setCountdown] = useState(0);
 
-  const handleInputChange = (field: keyof LoginFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+  // Countdown timer effect
+  useEffect(() => {
+    if (countdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  // Validate phone number format
+  const isPhoneValid = useCallback(() => {
+    const result = phoneSchema.safeParse(mobile);
+    return result.success;
+  }, [mobile]);
+
+  const handleMobileChange = (value: string) => {
+    // Only allow digits
+    const digits = value.replace(/\D/g, "");
+    setMobile(digits);
+    if (errors.mobile) {
+      setErrors((prev) => ({ ...prev, mobile: undefined }));
     }
   };
 
-  const validateForm = (): boolean => {
-    const result = loginFormSchema.safeParse(formData);
-    if (!result.success) {
-      const fieldErrors: FormErrors = {};
-      result.error.issues.forEach((err) => {
-        const field = err.path[0] as keyof FormErrors;
-        fieldErrors[field] = err.message;
-      });
-      setErrors(fieldErrors);
-      return false;
+  const handleCodeChange = (value: string) => {
+    // Only allow digits
+    const digits = value.replace(/\D/g, "");
+    setCode(digits);
+    if (errors.code) {
+      setErrors((prev) => ({ ...prev, code: undefined }));
     }
-    setErrors({});
-    return true;
+  };
+
+  const handleSendSmsCode = () => {
+    if (!isPhoneValid()) {
+      setErrors({ mobile: "请输入有效的11位手机号码" });
+      return;
+    }
+
+    sendSmsCodeMutation.mutate(
+      { mobile, scene: 1 }, // scene 1 = login
+      {
+        onSuccess: (data) => {
+          if (data.code === 0) {
+            setCountdown(60);
+          }
+        }
+      }
+    );
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    const phoneResult = phoneSchema.safeParse(mobile);
+    if (!phoneResult.success) {
+      newErrors.mobile = phoneResult.error.issues[0]?.message;
+    }
+
+    const codeResult = smsCodeSchema.safeParse(code);
+    if (!codeResult.success) {
+      newErrors.code = codeResult.error.issues[0]?.message;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,10 +113,7 @@ export default function LoginPage() {
     if (!validateForm()) return;
 
     // NextAuth handles redirect via the hook's onSuccess callback
-    passwordLoginMutation.mutate({
-      mobile: formData.mobile,
-      password: formData.password
-    });
+    smsLoginMutation.mutate({ mobile, code });
   };
 
   const handleClose = () => {
@@ -77,15 +121,13 @@ export default function LoginPage() {
     router.push("/welcome");
   };
 
-  const handleNavigateToRegister = () => {
-    router.push("/register");
-  };
+  const canSendSms = isPhoneValid() && countdown === 0 && !sendSmsCodeMutation.isPending;
 
   return (
     <motion.div initial="initial" animate="animate" exit="exit">
       {/* Card with slide-up animation */}
       <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 max-w-[361px] mx-auto">
-        <motion.div variants={cardVariants} className="bg-white rounded-[14px] shadow-xl">
+        <motion.div variants={cardVariants} className="bg-white/95 rounded-[14px] shadow-2xl">
           {/* Card Header */}
           <div className="relative px-6 pt-6 pb-2">
             {/* Close Button */}
@@ -104,7 +146,7 @@ export default function LoginPage() {
               欢迎回来
             </h1>
             <p className="text-base text-center text-gray-500 mt-2">
-              使用手机号码登录您的账户
+              使用手机号码验证码登录
             </p>
           </div>
 
@@ -119,8 +161,8 @@ export default function LoginPage() {
                 type="tel"
                 inputMode="numeric"
                 placeholder="请输入11位手机号"
-                value={formData.mobile}
-                onChange={(e) => handleInputChange("mobile", e.target.value)}
+                value={mobile}
+                onChange={(e) => handleMobileChange(e.target.value)}
                 className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]/30 focus:border-[#8b5cf6] transition-all"
                 maxLength={11}
               />
@@ -135,23 +177,37 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Password Input */}
+            {/* SMS Code Input */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-900">密码</label>
-              <input
-                type="password"
-                placeholder="请输入密码"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]/30 focus:border-[#8b5cf6] transition-all"
-              />
-              {errors.password && (
+              <label className="text-sm font-medium text-gray-900">验证码</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="请输入验证码"
+                  value={code}
+                  onChange={(e) => handleCodeChange(e.target.value)}
+                  className="flex-1 h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8b5cf6]/30 focus:border-[#8b5cf6] transition-all"
+                  maxLength={6}
+                />
+                <motion.button
+                  type="button"
+                  onClick={handleSendSmsCode}
+                  disabled={!canSendSms}
+                  whileHover={canSendSms ? { scale: 1.02 } : {}}
+                  whileTap={canSendSms ? { scale: 0.98 } : {}}
+                  className="h-9 px-4 border border-[#8b5cf6] text-[#8b5cf6] text-sm font-medium rounded-lg transition-all hover:bg-[#8b5cf6]/5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  {countdown > 0 ? `${countdown}s` : "获取验证码"}
+                </motion.button>
+              </div>
+              {errors.code && (
                 <motion.p
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-xs text-red-500"
                 >
-                  {errors.password}
+                  {errors.code}
                 </motion.p>
               )}
             </div>
@@ -159,28 +215,23 @@ export default function LoginPage() {
             {/* Login Button */}
             <motion.button
               type="submit"
-              disabled={passwordLoginMutation.isPending}
+              disabled={smsLoginMutation.isPending}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full h-11 bg-[#8b5cf6] text-white text-lg font-medium rounded-full transition-colors hover:bg-[#7c3aed] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {passwordLoginMutation.isPending ? "登录中..." : "登录"}
+              {smsLoginMutation.isPending ? "登录中..." : "登录"}
             </motion.button>
           </form>
 
-          {/* Card Footer */}
-          <div className="border-t border-gray-100 px-6 py-5">
-            <div className="flex items-center justify-center gap-1">
-              <span className="text-sm text-gray-500">还没有账号?</span>
-              <motion.button
-                onClick={handleNavigateToRegister}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="text-base font-medium text-[#ec4899] hover:underline"
-              >
-                立即注册
-              </motion.button>
-            </div>
+          {/* Card Footer - Privacy Policy */}
+          <div className="px-6 pb-6 pt-2">
+            <p className="text-center text-xs text-gray-400">
+              登录即代表同意
+              <span className="underline cursor-pointer mx-1">用户协议</span>
+              和
+              <span className="underline cursor-pointer mx-1">隐私政策</span>
+            </p>
           </div>
         </motion.div>
       </div>

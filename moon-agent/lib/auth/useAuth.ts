@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useMutation } from "@tanstack/react-query";
-import { signIn, signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { sendSmsCode, logoutApi, type ApiResponse } from "@/lib/core/api";
+import { useMutation } from '@tanstack/react-query';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { sendSmsCode, logoutApi, type ApiResponse } from '@/lib/core/api';
 
 // Re-export useSession for convenience
 export { useSession };
@@ -16,33 +16,35 @@ export function usePasswordLogin() {
   return useMutation({
     mutationFn: async ({
       mobile,
-      password
+      password,
     }: {
       mobile: string;
       password: string;
     }) => {
-      const result = await signIn("password", {
+      const result = await signIn('password', {
         mobile,
         password,
-        redirect: false
+        redirect: false,
       });
 
       if (result?.error) {
-        throw new Error(result.error === "CredentialsSignin" 
-          ? "手机号或密码错误" 
-          : result.error);
+        throw new Error(
+          result.error === 'CredentialsSignin'
+            ? '手机号或密码错误'
+            : result.error
+        );
       }
 
       return result;
     },
     onSuccess: () => {
-      toast.success("登录成功");
-      router.push("/chat");
+      toast.success('登录成功');
+      router.push('/chat');
       router.refresh();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "登录失败，请稍后重试");
-    }
+      toast.error(error.message || '登录失败，请稍后重试');
+    },
   });
 }
 
@@ -51,7 +53,7 @@ export function useSendSmsCode() {
   return useMutation({
     mutationFn: async ({
       mobile,
-      scene = 1
+      scene = 1,
     }: {
       mobile: string;
       scene?: number;
@@ -61,14 +63,14 @@ export function useSendSmsCode() {
     },
     onSuccess: (data: ApiResponse<boolean>) => {
       if (data.code === 0) {
-        toast.success("验证码已发送");
+        toast.success('验证码已发送');
       } else {
-        toast.error(data.msg || "发送失败");
+        toast.error(data.msg || '发送失败');
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || "发送失败，请稍后重试");
-    }
+      toast.error(error.message || '发送失败，请稍后重试');
+    },
   });
 }
 
@@ -78,28 +80,30 @@ export function useSmsLogin() {
 
   return useMutation({
     mutationFn: async ({ mobile, code }: { mobile: string; code: string }) => {
-      const result = await signIn("sms", {
+      const result = await signIn('sms', {
         mobile,
         code,
-        redirect: false
+        redirect: false,
       });
 
       if (result?.error) {
-        throw new Error(result.error === "CredentialsSignin" 
-          ? "验证码错误或已过期" 
-          : result.error);
+        throw new Error(
+          result.error === 'CredentialsSignin'
+            ? '验证码错误或已过期'
+            : result.error
+        );
       }
 
       return result;
     },
     onSuccess: () => {
-      toast.success("登录成功");
-      router.push("/chat");
+      toast.success('登录成功');
+      router.push('/chat');
       router.refresh();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "登录失败，请稍后重试");
-    }
+      toast.error(error.message || '登录失败，请稍后重试');
+    },
   });
 }
 
@@ -118,32 +122,32 @@ export function useLogout() {
           // Ignore backend errors, still proceed with local logout
         }
       }
-      
+
       // Sign out from NextAuth
       await signOut({ redirect: false });
     },
     onSuccess: () => {
-      toast.success("已退出登录");
-      router.push("/welcome");
+      toast.success('已退出登录');
+      router.push('/welcome');
       router.refresh();
     },
     onError: () => {
       // Still clear local session even if API fails
       signOut({ redirect: false });
-      router.push("/welcome");
-    }
+      router.push('/welcome');
+    },
   });
 }
 
 // Hook to get current authentication status
 export function useAuthStatus() {
   const { data: session, status } = useSession();
-  
+
   return {
     isAuthenticated: !!session,
-    isLoading: status === "loading",
+    isLoading: status === 'loading',
     user: session?.user,
     accessToken: session?.accessToken,
-    error: session?.error
+    error: session?.error,
   };
 }
