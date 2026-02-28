@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,12 +15,17 @@ vi.mock("next/navigation", () => ({
   })
 }));
 
-// next/image is rendered in auth layout now; page tests no longer need to mock it
+// Mock useAuth hooks for SMS login
+const mockSendSmsCode = vi.fn();
+const mockSmsLogin = vi.fn();
 
-// Mock useAuth hooks
 vi.mock("@/lib/auth/useAuth", () => ({
-  usePasswordLogin: () => ({
-    mutate: vi.fn(),
+  useSendSmsCode: () => ({
+    mutate: mockSendSmsCode,
+    isPending: false
+  }),
+  useSmsLogin: () => ({
+    mutate: mockSmsLogin,
     isPending: false
   })
 }));
@@ -40,15 +45,21 @@ function createWrapper() {
   };
 }
 
-describe("LoginPage", () => {
+describe("LoginPage (SMS Login)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
-  it("should render white card with correct styling", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should render card with correct styling", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     
-    const card = document.querySelector(".bg-white.rounded-\\[14px\\]");
+    // Check for card with white/translucent background
+    const card = document.querySelector(".bg-white\\/95.rounded-\\[14px\\]");
     expect(card).toBeInTheDocument();
   });
 
@@ -56,7 +67,7 @@ describe("LoginPage", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     
     expect(screen.getByText("欢迎回来")).toBeInTheDocument();
-    expect(screen.getByText("使用手机号码登录您的账户")).toBeInTheDocument();
+    expect(screen.getByText("使用手机号码验证码登录")).toBeInTheDocument();
   });
 
   it("should render phone number input", () => {
@@ -67,15 +78,23 @@ describe("LoginPage", () => {
     expect(phoneInput).toHaveAttribute("type", "tel");
   });
 
-  it("should render password input", () => {
+  it("should render SMS code input", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     
-    const passwordInput = screen.getByPlaceholderText("请输入密码");
-    expect(passwordInput).toBeInTheDocument();
-    expect(passwordInput).toHaveAttribute("type", "password");
+    const codeInput = screen.getByPlaceholderText("请输入验证码");
+    expect(codeInput).toBeInTheDocument();
   });
 
-  it("should render login button with purple color", () => {
+  it("should render get SMS code button with purple border", () => {
+    render(<LoginPage />, { wrapper: createWrapper() });
+    
+    const getSmsBtn = screen.getByRole("button", { name: /获取验证码/i });
+    expect(getSmsBtn).toBeInTheDocument();
+    expect(getSmsBtn).toHaveClass("border-[#8b5cf6]");
+    expect(getSmsBtn).toHaveClass("text-[#8b5cf6]");
+  });
+
+  it("should render login button with purple background", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     
     const loginBtn = screen.getByRole("button", { name: /登录/i });
@@ -83,24 +102,16 @@ describe("LoginPage", () => {
     expect(loginBtn).toHaveClass("bg-[#8b5cf6]");
   });
 
-  it("should render register link in footer", () => {
+  it("should render privacy policy in footer", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     
-    expect(screen.getByText("还没有账号?")).toBeInTheDocument();
-    expect(screen.getByText("立即注册")).toBeInTheDocument();
-  });
-
-  it("should navigate to register page when register link is clicked", async () => {
-    const user = userEvent.setup();
-    render(<LoginPage />, { wrapper: createWrapper() });
-    
-    const registerLink = screen.getByText("立即注册");
-    await user.click(registerLink);
-    
-    expect(mockPush).toHaveBeenCalledWith("/register");
+    expect(screen.getByText(/登录即代表同意/)).toBeInTheDocument();
+    expect(screen.getByText("用户协议")).toBeInTheDocument();
+    expect(screen.getByText("隐私政策")).toBeInTheDocument();
   });
 
   it("should navigate to welcome page when close button is clicked", async () => {
+    vi.useRealTimers();
     const user = userEvent.setup();
     render(<LoginPage />, { wrapper: createWrapper() });
     
@@ -110,7 +121,46 @@ describe("LoginPage", () => {
     expect(mockPush).toHaveBeenCalledWith("/welcome");
   });
 
+  it("should disable get SMS code button initially", () => {
+    render(<LoginPage />, { wrapper: createWrapper() });
+    
+    const getSmsBtn = screen.getByRole("button", { name: /获取验证码/i });
+    // Button should be disabled until valid phone is entered
+    expect(getSmsBtn).toBeDisabled();
+  });
+
+  it("should enable get SMS code button when valid phone is entered", async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    render(<LoginPage />, { wrapper: createWrapper() });
+    
+    const phoneInput = screen.getByPlaceholderText("请输入11位手机号");
+    await user.type(phoneInput, "13800138000");
+    
+    const getSmsBtn = screen.getByRole("button", { name: /获取验证码/i });
+    expect(getSmsBtn).not.toBeDisabled();
+  });
+
+  it("should call sendSmsCode when get code button is clicked", async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    render(<LoginPage />, { wrapper: createWrapper() });
+    
+    const phoneInput = screen.getByPlaceholderText("请输入11位手机号");
+    await user.type(phoneInput, "13800138000");
+    
+    const getSmsBtn = screen.getByRole("button", { name: /获取验证码/i });
+    await user.click(getSmsBtn);
+    
+    // Should call sendSmsCode with correct params
+    expect(mockSendSmsCode).toHaveBeenCalledWith(
+      { mobile: "13800138000", scene: 1 },
+      expect.any(Object)
+    );
+  });
+
   it("should validate phone number format (11 digits required)", async () => {
+    vi.useRealTimers();
     const user = userEvent.setup();
     render(<LoginPage />, { wrapper: createWrapper() });
     
@@ -123,15 +173,6 @@ describe("LoginPage", () => {
     expect(phoneInput).toHaveValue("123");
     // MaxLength should restrict to 11 chars
     expect(phoneInput).toHaveAttribute("maxLength", "11");
-  });
-
-  it("should have password input with hidden type", async () => {
-    render(<LoginPage />, { wrapper: createWrapper() });
-    
-    const passwordInput = screen.getByPlaceholderText("请输入密码");
-    
-    // Password should be hidden
-    expect(passwordInput).toHaveAttribute("type", "password");
   });
 });
 

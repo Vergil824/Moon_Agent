@@ -19,6 +19,7 @@ pnpm-debug.log*
 # env files
 .env
 .env.*
+!.env.example
 
 # coverage
 coverage/
@@ -36,8 +37,6 @@ coverage/
 .cursor/
 
 # Payment_Interface sensitive configs
-Payment_Interface
-moon_agent_taro
 
 
 
