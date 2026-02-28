@@ -1,0 +1,1086 @@
+/* Tailwind CSS v4 entry.
+ * For mini program builds, weapp-tailwindcss will rewrite this import.
+ */
+@import 'tailwindcss';
+
+/* ===========================================
+ * CSS Variables - Brand Theme Tokens
+ * Aligned with moon-agent/app/globals.css
+ * =========================================== */
+
+page {
+  /* Story 1.1 explicit theme tokens (hex) */
+  --moon-primary: #8b5cf6;
+  --moon-primary-hover: #7c3aed;
+  --moon-secondary: #ec4899;
+  --moon-text: #1f2937;
+  --moon-text-muted: #6b7280;
+  --moon-destructive: #d4183d;
+  --moon-page-gradient-from: #fff5f7;
+  --moon-page-gradient-to: #faf5ff;
+
+  /* Gradient tokens */
+  --gradient-start: #7c3aed;
+  --gradient-end: #a855f7;
+
+  /* Base styling */
+  --radius: 0.75rem;
+
+  /* Default page background */
+  background: linear-gradient(
+    to bottom,
+    var(--moon-page-gradient-from),
+    var(--moon-page-gradient-to)
+  );
+  min-height: 100vh;
+  color: var(--moon-text);
+
+  /* Cross-platform font stack */
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial,
+    sans-serif;
+}
+
+/* ===========================================
+ * Global Utility Classes
+ * Aligned with moon-agent/app/globals.css
+ * =========================================== */
+
+/* Story 1.4: Global page gradient class */
+.bg-page-gradient {
+  background: linear-gradient(
+    to bottom,
+    var(--moon-page-gradient-from),
+    var(--moon-page-gradient-to)
+  );
+}
+
+/* Card gradient background */
+.gradient-card {
+  background-image: linear-gradient(
+    135deg,
+    var(--gradient-start),
+    var(--gradient-end)
+  );
+}
+
+/* Primary gradient for buttons - moon-pink to moon-secondary */
+.bg-gradient-moon-primary {
+  background: linear-gradient(105deg, #da3568 9.87%, #fb7185 92.16%);
+}
+
+/* Shadow for moon-pink elements */
+.shadow-moon-pink {
+  box-shadow: 0px 3px 15px 0px rgba(251, 113, 133, 0.25);
+}
+
+/* Story 1.4: Header and nav shadow utilities */
+.header-shadow {
+  box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+}
+
+.nav-shadow {
+  box-shadow: 0px -4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Glass effect (frosted glass) */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+/* ===========================================
+ * Shadows (UI/UX parity with moon-agent)
+ * Story 3.5 / 7.x: Card shadows alignment
+ * =========================================== */
+/* Guide/entry card shadow (matches moon-agent ProductRecommendation guide card) */
+.moon-shadow-guide {
+  box-shadow:
+    0px 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0px 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Product card shadow (matches moon-agent ProductRecommendation product cards) */
+.moon-shadow-product-card {
+  box-shadow:
+    0px 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0px 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================================
+ * Badges / Tags (UI/UX parity with moon-agent)
+ * =========================================== */
+.moon-size-badge {
+  background: #f3e8ff;
+  border: 1px solid #e9d4ff;
+  color: #8b5cf6;
+}
+
+.moon-feature-tag {
+  background: #faf5ff;
+  border: 1px solid #e9d4ff;
+  color: #8b5cf6;
+}
+
+/* ===========================================
+ * Component Base Styles
+ * =========================================== */
+
+/* Primary button */
+.btn-primary {
+  background-color: var(--moon-primary);
+  color: #fff;
+  padding: 24px 32px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:active {
+  background-color: var(--moon-primary-hover);
+}
+
+/* Secondary button */
+.btn-secondary {
+  background-color: var(--moon-secondary);
+  color: #fff;
+  padding: 24px 32px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Outline button */
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid var(--moon-primary);
+  color: var(--moon-primary);
+  padding: 22px 32px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Card component */
+.card {
+  background-color: #fff;
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Input field */
+.input {
+  background-color: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: calc(var(--radius) - 4px);
+  padding: 20px 24px;
+  font-size: 28px;
+  width: 100%;
+  color: var(--moon-text);
+}
+
+.input::placeholder {
+  color: var(--moon-text-muted);
+}
+
+.input:focus {
+  border-color: var(--moon-primary);
+  outline: none;
+}
+
+/* Error text */
+.error-text {
+  color: var(--moon-destructive);
+  font-size: 24px;
+  margin-top: 8px;
+}
+
+/* ===========================================
+ * Loading Animation
+ * Aligned with moon-agent/app/globals.css
+ * =========================================== */
+
+@keyframes moon-indeterminate-bar {
+  from {
+    background-position-x: 0%;
+  }
+  to {
+    background-position-x: -200%;
+  }
+}
+
+.moon-indeterminate-bar {
+  /* Pink single flowing highlight */
+  background-image: linear-gradient(
+    90deg,
+    rgba(236, 72, 153, 0.12) 0%,
+    rgba(236, 72, 153, 0.25) 20%,
+    rgba(236, 72, 153, 0.65) 50%,
+    rgba(236, 72, 153, 0.25) 80%,
+    rgba(236, 72, 153, 0.12) 100%
+  );
+  background-size: 200% 100%;
+  animation: moon-indeterminate-bar 1.05s linear infinite;
+  will-change: background-position;
+}
+
+/* ===========================================
+ * Hide Scrollbar Globally
+ * =========================================== */
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* ===========================================
+ * Hide Textarea Resize Handle
+ * =========================================== */
+
+textarea,
+.taro-textarea,
+textarea.taro-textarea {
+  resize: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+textarea::-webkit-resizer,
+.taro-textarea::-webkit-resizer,
+textarea.taro-textarea::-webkit-resizer {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+taro-textarea-core {
+  overflow: hidden !important;
+}
+
+taro-textarea-core textarea {
+  resize: none !important;
+}
+
+taro-textarea-core textarea::-webkit-resizer {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* ===========================================
+ * Hide Native TabBar (using custom BottomNav)
+ * =========================================== */
+
+.taro-tabbar__tabbar {
+  display: none !important;
+}
+
+taro-tabbar {
+  display: none !important;
+}
+
+.weui-tabbar {
+  display: none !important;
+}
+
+/* ===========================================
+ * Chat Component Animations
+ * Story 7.2: Chat UI/UX Parity
+ * =========================================== */
+
+/* Typing indicator bounce animation */
+@keyframes typing-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Ring sweep animation for LoadingAnalysis */
+.ring-sweep {
+  /* Match moon-agent/app/globals.css ring sweep */
+  background: conic-gradient(
+    from 20deg,
+    #fbcfe8 0deg,
+    #f472b6 110deg,
+    #ec4899 180deg,
+    transparent 240deg,
+    transparent 360deg
+  );
+  /* Make the rotating ring thinner */
+  -webkit-mask: radial-gradient(farthest-side, transparent 74%, #000 75.5%);
+  mask: radial-gradient(farthest-side, transparent 74%, #000 75.5%);
+  opacity: 0.9;
+  will-change: transform;
+}
+
+/* Pulse animation for streaming indicator */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Subtle pulse animation for new message hint - draws attention without being distracting */
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4), 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 6px 24px rgba(139, 92, 246, 0.5), 0 3px 10px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* Gradient border for cards */
+.gradient-border {
+  /* Match moon-agent: bg-gradient-to-r from moon-purple to moon-pink */
+  background: linear-gradient(
+    90deg,
+    var(--moon-primary),
+    var(--moon-secondary)
+  );
+  padding: 2px;
+  border-radius: 24px;
+}
+
+.gradient-border-inner {
+  background: linear-gradient(135deg, #f6f0ff, #fff1f6);
+  border-radius: 22px;
+}
+
+/* Chat bubble pill button */
+.pill-button {
+  padding: 8px 16px;
+  background: white;
+  border: 2px solid var(--moon-primary);
+  color: var(--moon-primary);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.pill-button:active {
+  transform: scale(0.95);
+  background: #faf5ff;
+}
+
+/* Select card styles */
+.select-card {
+  position: relative;
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.select-card:active {
+  transform: scale(0.98);
+}
+
+.select-card-selected {
+  border-color: var(--moon-primary);
+  background: #faf5ff;
+}
+
+/* Pain point card styles */
+.pain-point-card {
+  position: relative;
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 120px;
+  transition: all 0.2s ease;
+}
+
+.pain-point-card:active {
+  transform: scale(0.98);
+}
+
+.pain-point-card-selected {
+  border-color: var(--moon-primary);
+  background: #faf5ff;
+}
+
+/* Checkmark icon */
+.checkmark-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: var(--moon-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===========================================
+ * NutUI Range Custom Colors
+ * Using CSS variables and stronger selectors
+ * =========================================== */
+
+/* Purple range slider (lower bust, auxiliary inputs) */
+.nutui-range-purple {
+  --nutui-range-active-color: var(--moon-primary);
+}
+
+.nutui-range-purple .nut-range-bar {
+  background: var(--moon-primary) !important;
+}
+
+.nutui-range-purple .nut-range-button {
+  border-color: var(--moon-primary) !important;
+}
+
+/* Pink range slider (upper bust) */
+.nutui-range-pink {
+  --nutui-range-active-color: var(--moon-secondary);
+}
+
+.nutui-range-pink .nut-range-bar {
+  background: var(--moon-secondary) !important;
+}
+
+.nutui-range-pink .nut-range-button {
+  border-color: var(--moon-secondary) !important;
+}
+
+/* ===========================================
+ * Welcome Options Button Styles
+ * =========================================== */
+
+.welcome-option-btn {
+  padding: 8px 16px !important;
+  background: white !important;
+  border: 2px solid var(--moon-primary) !important;
+  color: var(--moon-primary) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.welcome-option-btn:active {
+  transform: scale(0.95);
+  background: #faf5ff !important;
+}
+
+/* ===========================================
+ * Auth Card Animation
+ * =========================================== */
+
+@keyframes auth-card-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.auth-card-animate {
+  animation: auth-card-enter 0.25s ease-out forwards;
+}
+
+/* Welcome buttons fade-in */
+@keyframes welcome-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-animate {
+  animation: welcome-fade-in 0.25s ease-out forwards;
+}
+
+/* ===========================================
+ * NutUI Input Custom Styles for Auth Forms
+ * =========================================== */
+
+.nut-input-custom {
+  width: 100%;
+}
+
+.nut-input-custom .nut-input {
+  height: 72rpx;
+  padding: 0 24rpx;
+  background-color: #f9fafb;
+  border: 2rpx solid #e5e7eb;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  color: #111827;
+}
+
+.nut-input-custom .nut-input__input {
+  font-size: 32rpx !important;
+  color: #111827 !important;
+}
+
+.nut-input-custom .nut-input__input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* ===========================================
+ * NutUI Global Theme Overrides
+ * Replace default red (#fa2c19) with Moon brand purple (#8b5cf6)
+ * =========================================== */
+
+page {
+  /* =============================================
+   * Core Brand Colors
+   * ============================================= */
+  --nutui-brand-color: var(--moon-primary);
+  --nutui-brand-color-start: var(--gradient-start);
+  --nutui-brand-color-end: var(--gradient-end);
+  --nutui-brand-link-color: var(--moon-primary);
+  --nutui-brand-text-color: #ffffff;
+
+  /* =============================================
+   * Button Component - Primary
+   * ============================================= */
+  --nutui-button-primary-color: #ffffff;
+  --nutui-button-primary-border-color: var(--moon-primary);
+  /* Note: background gradient is handled via CSS override below */
+
+  /* Button - Disabled state (fix the pink highlight issue) */
+  --nutui-button-disabled-opacity: 0.6;
+
+  /* =============================================
+   * Button Component - Danger (use moon-destructive)
+   * ============================================= */
+  --nutui-button-danger-color: #ffffff;
+  --nutui-button-danger-border-color: var(--moon-destructive);
+  --nutui-button-danger-background-color: var(--moon-destructive);
+
+  /* =============================================
+   * Input & Textarea
+   * ============================================= */
+  --nutui-input-required-color: var(--moon-destructive);
+  --nutui-textarea-text-color: var(--moon-text);
+
+  /* =============================================
+   * Checkbox & Radio - use brand purple
+   * ============================================= */
+  --nutui-checkbox-label-color: var(--moon-text);
+  --nutui-radio-label-font-color: var(--moon-text);
+  --nutui-radio-label-font-active-color: var(--moon-primary);
+  --nutui-radio-label-button-border-color: var(--moon-primary);
+  --nutui-radio-label-button-background: rgba(139, 92, 246, 0.08);
+
+  /* =============================================
+   * Toast Component
+   * ============================================= */
+  --nutui-toast-inner-bg-color: rgba(0, 0, 0, 0.7);
+
+  /* =============================================
+   * Popup & Overlay
+   * ============================================= */
+  --nutui-overlay-bg-color: rgba(0, 0, 0, 0.5);
+  --nutui-popup-close-icon-color: var(--moon-text-muted);
+
+  /* =============================================
+   * Tabs Component
+   * ============================================= */
+  --nutui-tabs-tab-smile-color: var(--moon-primary);
+  --nutui-tabs-titles-item-active-color: var(--moon-primary);
+  --nutui-tabs-horizontal-tab-line-color: linear-gradient(
+    90deg,
+    var(--moon-primary) 0%,
+    rgba(139, 92, 246, 0.15) 100%
+  );
+
+  /* =============================================
+   * Tabbar Component
+   * ============================================= */
+  --nutui-tabbar-active-color: var(--moon-primary);
+  --nutui-tabbar-unactive-color: var(--moon-text-muted);
+
+  /* =============================================
+   * Rate Component
+   * ============================================= */
+  --nutui-rate-icon-color: var(--moon-primary);
+
+  /* =============================================
+   * Calendar Component
+   * ============================================= */
+  --nutui-calendar-primary-color: var(--moon-primary);
+  --nutui-calendar-choose-color: rgba(139, 92, 246, 0.09);
+  --nutui-calendar-choose-font-color: var(--moon-primary);
+  --nutui-calendar-day67-font-color: var(--moon-primary);
+
+  /* =============================================
+   * Steps Component
+   * ============================================= */
+  --nutui-steps-process-icon-bg-color: var(--moon-primary);
+  --nutui-steps-process-head-color: var(--moon-primary);
+  --nutui-steps-process-head-border-color: var(--moon-primary);
+  --nutui-steps-process-title-color: var(--moon-primary);
+  --nutui-steps-finish-icon-color: var(--moon-primary);
+  --nutui-steps-finish-head-color: var(--moon-primary);
+  --nutui-steps-finish-head-border-color: var(--moon-primary);
+  --nutui-steps-finish-title-color: var(--moon-primary);
+  --nutui-steps-finish-line-background: var(--moon-primary);
+
+  /* =============================================
+   * Progress Component
+   * ============================================= */
+  --nutui-progress-inner-background-color: linear-gradient(
+    135deg,
+    var(--moon-primary) 0%,
+    var(--gradient-end) 100%
+  );
+
+  /* =============================================
+   * Pagination Component
+   * ============================================= */
+  --nutui-pagination-color: var(--moon-primary);
+
+  /* =============================================
+   * Picker Component
+   * ============================================= */
+  --nutui-picker-ok-color: var(--moon-primary);
+
+  /* =============================================
+   * Cascader Component
+   * ============================================= */
+  --nutui-cascader-item-active-color: var(--moon-primary);
+
+  /* =============================================
+   * Address Component
+   * ============================================= */
+  --nutui-address-icon-color: var(--moon-primary);
+
+  /* =============================================
+   * SearchBar Component
+   * ============================================= */
+  --nutui-searchbar-background: #ffffff;
+  --nutui-searchbar-input-background: #f3f4f6;
+
+  /* =============================================
+   * Menu Component
+   * ============================================= */
+  --nutui-menu-item-active-text-color: var(--moon-primary);
+
+  /* =============================================
+   * Indicator Component
+   * ============================================= */
+  --nutui-indicator-color: var(--moon-primary);
+
+  /* =============================================
+   * Badge Component - use brand gradient
+   * ============================================= */
+  --nutui-badge-background-color: linear-gradient(
+    135deg,
+    var(--moon-primary) 0%,
+    var(--gradient-end) 100%
+  );
+
+  /* =============================================
+   * Notify Component
+   * ============================================= */
+  --nutui-notify-danger-background-color: var(--moon-destructive);
+
+  /* =============================================
+   * ShortPassword Component
+   * ============================================= */
+  --nutui-shortpassword-error: var(--moon-primary);
+
+  /* =============================================
+   * NumberKeyboard Component
+   * ============================================= */
+  --nutui-numberkeyboard-key-finish-background-color: var(--moon-primary);
+  --nutui-numberkeyboard-key-activeFinsh-background-color: var(--moon-primary);
+
+  /* =============================================
+   * FixedNav Component
+   * ============================================= */
+  --nutui-fixednav-item-active-color: var(--moon-primary);
+
+  /* =============================================
+   * Popover Component
+   * ============================================= */
+  --nutui-popover-menu-item-hover-background-color: var(--moon-primary);
+
+  /* =============================================
+   * Elevator Component
+   * ============================================= */
+  --nutui-elevator-list-item-highcolor: var(--moon-primary);
+  --nutui-elevator-list-fixed-color: var(--moon-primary);
+  --nutui-elevator-list-item-bars-inner-item-active-color: var(--moon-primary);
+
+  /* =============================================
+   * CircleProgress Component
+   * ============================================= */
+  --nutui-circleprogress-primary-color: var(--moon-primary);
+
+  /* =============================================
+   * Form Component
+   * ============================================= */
+  --nutui-form-item-error-line-color: var(--moon-destructive);
+  --nutui-form-item-required-color: var(--moon-destructive);
+  --nutui-form-item-error-message-color: var(--moon-destructive);
+
+  /* =============================================
+   * Cell Component
+   * ============================================= */
+  --nutui-cell-color: var(--moon-text);
+  --nutui-cell-desc-color: var(--moon-text-muted);
+  --nutui-cell-subtitle-color: var(--moon-text-muted);
+
+  /* =============================================
+   * Divider Component
+   * ============================================= */
+  --nutui-divider-text-color: var(--moon-text);
+
+  /* =============================================
+   * Dialog Component
+   * ============================================= */
+  --nutui-dialog-header-color: var(--moon-text);
+
+  /* =============================================
+   * ActionSheet Component
+   * ============================================= */
+  --nutui-actionsheet-item-font-color: var(--moon-text);
+
+  /* =============================================
+   * Collapse Component
+   * ============================================= */
+  --nutui-collapse-item-color: var(--moon-text);
+
+  /* =============================================
+   * TimeSelect Component
+   * ============================================= */
+  --nutui-timeselect-timedetail-item-cur-bg-color: rgba(139, 92, 246, 0.15);
+  --nutui-timeselect-timedetail-item-cur-border: var(--moon-primary);
+  --nutui-timeselect-timedetail-item-cur-text-color: var(--moon-primary);
+}
+
+/* ===========================================
+ * NutUI Button Gradient Overrides
+ * CSS variables can't handle gradient backgrounds well,
+ * so we use direct class overrides
+ * =========================================== */
+
+/* Primary button gradient background */
+.nut-button--primary:not(.nut-button--plain) {
+  background: linear-gradient(
+    135deg,
+    var(--moon-primary) 0%,
+    var(--gradient-end) 100%
+  ) !important;
+  border-color: var(--moon-primary) !important;
+}
+
+.nut-button--primary:not(.nut-button--plain):active {
+  background: linear-gradient(
+    135deg,
+    var(--moon-primary-hover) 0%,
+    var(--moon-primary) 100%
+  ) !important;
+}
+
+/* Primary button - plain (outline) style */
+.nut-button--primary.nut-button--plain {
+  color: var(--moon-primary) !important;
+  border-color: var(--moon-primary) !important;
+  background: transparent !important;
+}
+
+.nut-button--primary.nut-button--plain:active {
+  background: rgba(139, 92, 246, 0.08) !important;
+}
+
+/* Disabled button - remove pink/red color, use neutral gray or light purple */
+.nut-button--disabled,
+.nut-button[disabled],
+.nut-button.nut-button--disabled,
+.nut-button[disabled='true'],
+.nut-button[disabled='disabled'] {
+  background: #d1d5db !important;
+  border-color: #d1d5db !important;
+  color: #9ca3af !important;
+  opacity: 1 !important;
+  /* Remove any potential highlight or glow effects */
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Primary disabled button - light purple instead of pink/red */
+.nut-button--primary.nut-button--disabled,
+.nut-button--primary[disabled],
+.nut-button--primary[disabled='true'],
+.nut-button--primary[disabled='disabled'],
+.nut-button.nut-button--primary.nut-button--disabled,
+.nut-button.nut-button--primary[disabled] {
+  background: #c4b5fd !important;
+  border-color: #c4b5fd !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Plain primary disabled */
+.nut-button--primary.nut-button--plain.nut-button--disabled,
+.nut-button--primary.nut-button--plain[disabled] {
+  background: transparent !important;
+  border-color: #c4b5fd !important;
+  color: #c4b5fd !important;
+}
+
+/* Danger disabled button */
+.nut-button--danger.nut-button--disabled,
+.nut-button--danger[disabled] {
+  background: #fca5a5 !important;
+  border-color: #fca5a5 !important;
+  color: #ffffff !important;
+}
+
+/* Info/Default disabled button */
+.nut-button--info.nut-button--disabled,
+.nut-button--info[disabled],
+.nut-button--default.nut-button--disabled,
+.nut-button--default[disabled] {
+  background: #e5e7eb !important;
+  border-color: #d1d5db !important;
+  color: #9ca3af !important;
+}
+
+/* Remove any active/hover state for disabled buttons */
+.nut-button--disabled:active,
+.nut-button[disabled]:active,
+.nut-button--disabled:hover,
+.nut-button[disabled]:hover {
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Danger button */
+.nut-button--danger:not(.nut-button--plain) {
+  background: var(--moon-destructive) !important;
+  border-color: var(--moon-destructive) !important;
+}
+
+/* ===========================================
+ * NutUI Range/Slider - use brand purple
+ * =========================================== */
+
+.nut-range .nut-range-bar {
+  background: linear-gradient(
+    135deg,
+    var(--moon-primary) 0%,
+    var(--gradient-end) 100%
+  ) !important;
+}
+
+.nut-range .nut-range-button {
+  border-color: var(--moon-primary) !important;
+}
+
+/* ===========================================
+ * NutUI Switch - use brand purple when active
+ * =========================================== */
+
+.nut-switch-open {
+  background: var(--moon-primary) !important;
+}
+
+/* ===========================================
+ * NutUI Progress - use brand gradient
+ * =========================================== */
+
+.nut-progress-inner {
+  background: linear-gradient(
+    135deg,
+    var(--moon-primary) 0%,
+    var(--gradient-end) 100%
+  ) !important;
+}
+
+/* ===========================================
+ * NutUI Tabs - active line color
+ * =========================================== */
+
+.nut-tabs__titles-item__line {
+  background: linear-gradient(
+    90deg,
+    var(--moon-primary) 0%,
+    rgba(139, 92, 246, 0.15) 100%
+  ) !important;
+}
+
+/* ===========================================
+ * NutUI Checkbox - checked state
+ * For cart pages: pink (#ec4899) background
+ * =========================================== */
+
+/* Global checkbox checked state - remove purple override to allow component styles to work */
+/* Cart uses --nutui-color-primary override */
+
+/* Cart-specific checkbox - override NutUI's primary color to pink */
+.cart-checkbox-pink {
+  --nutui-color-primary: #ec4899 !important;
+  --nutui-color-primary-stop1: #ec4899 !important;
+  --nutui-color-primary-stop2: #ec4899 !important;
+  --nutui-checkbox-icon-checked-background-color: #ec4899 !important;
+  --nutui-checkbox-icon-checked-border-color: #ec4899 !important;
+}
+
+/* Force background color for cart checkboxes - all states */
+.cart-checkbox-pink .nut-checkbox__icon,
+.cart-checkbox-pink .nut-checkbox__icon--checked {
+  border-color: #d1d5db !important;
+}
+
+.cart-checkbox-pink .nut-checkbox__icon--checked {
+  background: #ec4899 !important;
+  background-color: #ec4899 !important;
+  border-color: #ec4899 !important;
+}
+
+/* Checkmark icon should be white */
+.cart-checkbox-pink .nut-checkbox__icon--checked .nut-icon,
+.cart-checkbox-pink .nut-checkbox__icon--checked svg,
+.cart-checkbox-pink .nut-checkbox__icon--checked::after {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+/* Override NutUI checkbox unchecked state - gray border */
+.cart-checkbox-pink .nut-checkbox__icon:not(.nut-checkbox__icon--checked) {
+  background: #ffffff !important;
+  border-color: #d1d5db !important;
+}
+
+/* ===========================================
+ * Text Color Classes for Brand Theme
+ * Fallback classes if Tailwind v4 @theme doesn't work
+ * =========================================== */
+
+.text-moon-pink {
+  color: #ec4899 !important;
+}
+
+.text-moon-purple {
+  color: #8b5cf6 !important;
+}
+
+.text-moon-text {
+  color: #1f2937 !important;
+}
+
+.text-moon-text-muted {
+  color: #6b7280 !important;
+}
+
+.border-moon-pink {
+  border-color: #ec4899 !important;
+}
+
+/* ===========================================
+ * NutUI Radio - checked state
+ * =========================================== */
+
+.nut-radio__icon--checked {
+  color: var(--moon-primary) !important;
+}
+
+/* ===========================================
+ * NutUI Loading - spinner color
+ * =========================================== */
+
+.nut-loading-icon {
+  color: var(--moon-primary) !important;
+}
+
+/* ===========================================
+ * NutUI Badge - notification dot
+ * =========================================== */
+
+.nut-badge__content {
+  background: linear-gradient(
+    135deg,
+    var(--moon-primary) 0%,
+    var(--gradient-end) 100%
+  ) !important;
+}
+
+/* ===========================================
+ * NutUI Tag - primary style
+ * =========================================== */
+
+.nut-tag--primary {
+  background: var(--moon-primary) !important;
+}
+
+/* ===========================================
+ * NutUI Steps - process/finish states
+ * =========================================== */
+
+.nut-step-process .nut-step-head-inner {
+  background: var(--moon-primary) !important;
+  border-color: var(--moon-primary) !important;
+}
+
+.nut-step-finish .nut-step-head-inner {
+  border-color: var(--moon-primary) !important;
+  color: var(--moon-primary) !important;
+}
+
+.nut-step-finish .nut-step-line {
+  background: var(--moon-primary) !important;
+}
+
+/* ===========================================
+ * NutUI FixedNav - active item
+ * =========================================== */
+
+.nut-fixednav__btn {
+  background: linear-gradient(
+    135deg,
+    var(--moon-primary) 0%,
+    var(--gradient-end) 100%
+  ) !important;
+}

@@ -1,0 +1,73 @@
+{
+  "miniprogramRoot": "./dist/weapp",
+  "projectname": "moon_agent_taro",
+  "description": "满月Moon - AI 内衣导购助手",
+  "appid": "wx4510c149e46ab7b2",
+  "setting": {
+    "urlCheck": false,
+    "es6": false,
+    "enhance": false,
+    "compileHotReLoad": false,
+    "postcss": false,
+    "minified": false
+  },
+  "compileType": "miniprogram",
+  "__DOMAIN_WHITELIST_NOTE__": {
+    "description": "The following domains need to be configured in WeChat Mini Program backend (mp.weixin.qq.com) for production",
+    "request_domains": [
+      "https://www.moonagent.com.cn",
+      "https://kunucyhvzsophytnprcm.supabase.co",
+      "https://static.iocoder.cn"
+    ],
+    "uploadFile_domains": [
+      "https://www.moonagent.com.cn",
+      "https://kunucyhvzsophytnprcm.supabase.co"
+    ],
+    "downloadFile_domains": [
+      "https://www.moonagent.com.cn",
+      "https://kunucyhvzsophytnprcm.supabase.co",
+      "https://static.iocoder.cn"
+    ],
+    "socket_domains": [
+      "wss://www.moonagent.com.cn"
+    ],
+    "image_domains": [
+      "https://kunucyhvzsophytnprcm.supabase.co",
+      "https://static.iocoder.cn"
+    ],
+    "remote_patterns": [
+      {
+        "protocol": "https",
+        "hostname": "www.moonagent.com.cn",
+        "pathname": "/app-api/**"
+      },
+      {
+        "protocol": "https",
+        "hostname": "kunucyhvzsophytnprcm.supabase.co",
+        "pathname": "/storage/v1/object/sign/**"
+      },
+      {
+        "protocol": "https",
+        "hostname": "kunucyhvzsophytnprcm.supabase.co",
+        "pathname": "/storage/v1/object/public/**"
+      },
+      {
+        "protocol": "https",
+        "hostname": "static.iocoder.cn",
+        "pathname": "/**"
+      }
+    ],
+    "dev_domains": {
+      "request": ["http://127.0.0.1:48080", "http://localhost:48080"],
+      "note": "Development domains only - set urlCheck to false during development"
+    },
+    "configuration_guide": {
+      "step_1": "Login to WeChat Mini Program backend: mp.weixin.qq.com",
+      "step_2": "Navigate to: Development -> Development Settings -> Server Domain Configuration",
+      "step_3": "Add domains to corresponding categories (request/uploadFile/downloadFile/socket)",
+      "step_4": "For production, all domains must use HTTPS (except socket which uses WSS)",
+      "step_5": "After configuration, restart Mini Program to apply changes"
+    },
+    "note": "Set urlCheck to false during development to bypass domain validation"
+  }
+}
